@@ -1,0 +1,32 @@
+[
+  {
+    "phase": "A",
+    "dataset": "diabetes",
+    "train_rows": 691,
+    "test_rows": 77,
+    "n_features": 8,
+    "n_classes": 2,
+    "k": "full",
+    "status": "OK",
+    "auc": 0.8555555555555555,
+    "fit_sec": 1.7960779666900635,
+    "predict_sec": 22.373842239379883,
+    "total_sec": 24.169920206069946,
+    "samples_per_sec": 3.4415188583243603
+  },
+  {
+    "phase": "A",
+    "dataset": "credit-g",
+    "train_rows": 900,
+    "test_rows": 100,
+    "n_features": 20,
+    "n_classes": 2,
+    "k": "full",
+    "status": "OK",
+    "auc": 0.8066666666666666,
+    "fit_sec": 0.7878766059875488,
+    "predict_sec": 15.564503192901611,
+    "total_sec": 16.35237979888916,
+    "samples_per_sec": 6.424875806225943
+  }
+]
