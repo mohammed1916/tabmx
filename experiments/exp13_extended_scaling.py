@@ -1,18 +1,24 @@
 """
-Experiment 13: Context Efficiency Study (Redesigned)
+Experiment 13: Context Budget Estimation Study
 
-Research Question: How many prototype samples are optimal, and can this be predicted from dataset properties?
+Core Research Question:
+  For a given dataset, what is the MINIMUM context size (k) needed to achieve 99% of maximum accuracy?
+  Can this be predicted from dataset meta-features (size, dimensionality, class balance, etc.)?
 
-Phases:
-  A. Scaling behavior: Measure AUC, runtime, memory across dataset sizes (1K-100K)
-  B. Context efficiency: For each dataset size, find minimum k achieving 95%/99% of max AUC
-  C. Meta-learning: Validate learned k selection on multiple datasets
+This is an empirical characterization study. The goal is to:
+  1. Collect complete AUC curves (k=32 to full) for 30+ diverse datasets
+  2. Characterize saturation behavior and identify dataset-dependent patterns
+  3. Build a simple predictor for "k99" (minimum k for 99% of max AUC)
+  4. Validate the predictor via leave-one-dataset-out cross-validation
 
-Datasets:
-  - Small: diabetes (691), credit-g (1K)
-  - Medium: bank-marketing (40K), electricity (40K), adult (43K)
-  - Large: covertype (580K), higgs (11M, optional)
-  - All public OpenML datasets to ensure reproducibility
+Design principles:
+  - No premature claims from small samples
+  - Empirical evidence first, claims second
+  - All datasets public and reproducible
+  - Complete curves, not single measurements
+  - Focus on k99, not just "optimal k" (more concrete problem)
+
+Datasets: 30+ OpenML datasets (binary+multiclass, small+medium+large, varying features/imbalance)
 """
 
 from __future__ import annotations

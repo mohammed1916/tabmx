@@ -1803,7 +1803,91 @@ Redesigned exp13 measures context efficiency across k values and dataset sizes (
 
 ---
 
-## Part 24: Current Status and Next Steps (2026-07-22)
+## Part 24: Critical Reframing - From Premature Claims to Rigorous Empiricism (2026-07-22)
+
+### Expert Feedback on Current State
+
+**The Problem**: We observed saturation on 3 datasets and called it a "finding."
+
+**The Reality**: 3 datasets prove nothing. Reviewers will see:
+- "Saturation" could be noise or dataset-specific artifact
+- "Dataset-dependent k" is unsupported (no meta-features tested)
+- "Scaling law" requires complete curves (k=64 to 16384) across 30-50 datasets
+
+**The Solution**: Reframe as **empirical characterization study**, not a findings paper.
+
+### Corrected Research Plan
+
+**Phase A: Data Collection (PRIMARY FOCUS)**
+- 30-50 diverse OpenML datasets
+- Binary + multiclass classification
+- Small (100-1K rows) + medium (1K-100K) + large (100K+)
+- Varying feature counts (2-100+ features)
+- Varying class imbalance
+- **For each dataset**: Test k ∈ [32, 64, 128, 256, 512, 1024, 2048, 4096, 8192, 16384, full]
+- **Output**: Complete AUC curves (not single measurements)
+
+**Phase B: Empirical Analysis (EVIDENCE GENERATION)**
+- Aggregate all 30-50 curves
+- Characterize patterns:
+  * Do ALL datasets show saturation? (or only some?)
+  * Where do curves plateau? (is it 10K? 1K? 100K?)
+  * Does saturation depend on n, m, n_classes, imbalance? (meta-feature correlation)
+- **Output**: Empirical laws (if they exist)
+
+**Phase C: Budget Estimation (IF Phase B shows clear patterns)**
+- IF saturation is consistent: train meta-learner to predict k99 (min k for 99% of max AUC)
+- LOOCV on 30-50 datasets
+- Compare vs baselines: fixed k, sqrt(n), log(n)
+- **Output**: Prediction model (only if evidence supports it)
+
+### What NOT to Claim (Yet)
+
+❌ "We discovered saturation behavior"  
+✅ "We empirically characterized saturation across 30-50 datasets"
+
+❌ "Dataset-dependent optimal k"  
+✅ "Preliminary observation: saturation varies by dataset; correlation with meta-features not yet analyzed"
+
+❌ "Scaling law"  
+✅ "We collected complete AUC curves (k=32 to full) to investigate whether such laws exist"
+
+### The Stronger Contribution
+
+**Instead of**: "Predict optimal k"  
+**Better**: "Predict minimum k achieving 99% of max AUC" (k99)
+
+Why this is stronger:
+- Directly solves practitioner problem: "I need 99% accuracy with minimum compute cost"
+- More defensible: not claiming "best" (subjective), claiming "minimum sufficient" (objective)
+- Tighter optimization: minimizes wasted context
+- Clearer evaluation: either you hit 99% threshold or you don't
+
+### Current Evidence Assessment
+
+| Aspect | Rating | Status |
+|--------|--------|--------|
+| Research question originality | 7.5-8/10 | Good |
+| Experimental evidence | 4/10 | **Too weak** |
+| Potential (with 30-50 datasets) | 8.5/10 | Excellent if executed |
+| Implementation readiness | 8/10 | Good (code ready) |
+
+### The Path Forward
+
+**Do NOT**:
+- Write "findings" from 3-4 measurements
+- Claim saturation is real (yet)
+- Claim k is predictable (yet)
+
+**DO**:
+- Run exp13 Phase A/B on 30-50 datasets
+- Collect complete curves (all k values)
+- Let empirical patterns emerge
+- **Then** make claims backed by breadth of evidence
+
+---
+
+## Part 25: Current Status and Next Steps (2026-07-22)
 
 ### What's Complete
 
