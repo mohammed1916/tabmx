@@ -670,5 +670,101 @@
     "pct_drop": 3.5632886665863484,
     "n_classes": 2,
     "status": "OK"
+  },
+  {
+    "experiment": "exp5_shift",
+    "dataset": "adult",
+    "method": "proto_k512",
+    "shift": "noise",
+    "magnitude": 0.0,
+    "roc_auc": 0.8931745919202653,
+    "baseline_auc": 0.8931745919202653,
+    "pct_drop": 0.0,
+    "n_classes": 2,
+    "status": "OK"
+  },
+  {
+    "experiment": "exp5_shift",
+    "dataset": "adult",
+    "method": "full",
+    "shift": "noise",
+    "magnitude": 0.0,
+    "roc_auc": 0.9115481937861935,
+    "baseline_auc": 0.9115481937861935,
+    "pct_drop": 0.0,
+    "n_classes": 2,
+    "status": "OK"
+  },
+  {
+    "experiment": "exp5_shift",
+    "dataset": "adult",
+    "method": "proto_k512",
+    "shift": "noise",
+    "magnitude": 0.25,
+    "roc_auc": 0.8751571131149971,
+    "baseline_auc": 0.8931745919202653,
+    "pct_drop": 2.01724041058219,
+    "n_classes": 2,
+    "status": "OK"
+  },
+  {
+    "experiment": "exp5_shift",
+    "dataset": "adult",
+    "method": "full",
+    "shift": "noise",
+    "magnitude": 0.25,
+    "roc_auc": 0.8978389522661583,
+    "baseline_auc": 0.9115481937861935,
+    "pct_drop": 1.5039513668600073,
+    "n_classes": 2,
+    "status": "OK"
+  },
+  {
+    "experiment": "exp5_shift",
+    "dataset": "adult",
+    "method": "proto_k512",
+    "shift": "noise",
+    "magnitude": 0.5,
+    "roc_auc": 0.8621909648333657,
+    "baseline_auc": 0.8931745919202653,
+    "pct_drop": 3.4689328791011507,
+    "n_classes": 2,
+    "status": "OK"
+  },
+  {
+    "experiment": "exp5_shift",
+    "dataset": "adult",
+    "method": "full",
+    "shift": "noise",
+    "magnitude": 0.5,
+    "roc_auc": 0.8778194034812122,
+    "baseline_auc": 0.9115481937861935,
+    "pct_drop": 3.7001653379275314,
+    "n_classes": 2,
+    "status": "OK"
+  },
+  {
+    "experiment": "exp5_shift",
+    "dataset": "adult",
+    "method": "proto_k512",
+    "shift": "noise",
+    "magnitude": 1.0,
+    "roc_auc": 0.8258641106223659,
+    "baseline_auc": 0.8931745919202653,
+    "pct_drop": 7.5360945000894395,
+    "n_classes": 2,
+    "status": "OK"
+  },
+  {
+    "experiment": "exp5_shift",
+    "dataset": "adult",
+    "method": "full",
+    "shift": "noise",
+    "magnitude": 1.0,
+    "roc_auc": 0.8246916899708195,
+    "baseline_auc": 0.9115481937861935,
+    "pct_drop": 9.528459867229618,
+    "n_classes": 2,
+    "status": "OK"
   }
 ]

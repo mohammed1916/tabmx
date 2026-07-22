@@ -8,5 +8,15 @@
     "auc_importance": 0.7294679612068415,
     "improvement": -15.237363361087972,
     "status": "OK"
+  },
+  {
+    "dataset": "bank-marketing",
+    "method_random": "random",
+    "method_importance": "feature_variance",
+    "k": 512,
+    "auc_random": 0.9023143999162996,
+    "auc_importance": 0.8748793375174039,
+    "improvement": -3.040521397136146,
+    "status": "OK"
   }
 ]

@@ -58,5 +58,25 @@
     "std_auc": 0.004118738984148496,
     "n_heads_successful": 2,
     "status": "OK"
+  },
+  {
+    "dataset": "bank-marketing",
+    "n_heads": 4,
+    "k_per_head": 256,
+    "total_k": 1024,
+    "mean_auc": 0.8663967472377228,
+    "std_auc": 0.012558987828518182,
+    "n_heads_successful": 4,
+    "status": "OK"
+  },
+  {
+    "dataset": "bank-marketing",
+    "n_heads": 8,
+    "k_per_head": 128,
+    "total_k": 1024,
+    "mean_auc": 0.8439310676954992,
+    "std_auc": 0.03516715364534888,
+    "n_heads_successful": 8,
+    "status": "OK"
   }
 ]
