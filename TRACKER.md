@@ -1971,6 +1971,84 @@ Why this is stronger:
 
 ---
 
+## Part 26: Rigorous Empirical Framework Implementation (2026-07-22)
+
+### What Was Implemented
+
+**Dataset Curation** (benchmark_datasets.py):
+- Curated list of 8+ core datasets with domain diversity
+- Size distribution: small (500-2K), medium (2K-10K), large (10K-50K), very-large (50K-100K)
+- Domains: healthcare, finance, marketing, census, telecom, sensor, physics, banking
+- Ready to expand to 30-50 datasets following same criteria
+
+**Rich Meta-Features** (compute_meta_features function):
+- Basic: n_samples, n_features, n_classes, log(n), log(m), n/m ratio
+- Distribution: numeric_ratio, categorical_ratio, missing_ratio
+- Complexity: class_entropy, minority_class_ratio
+- Much stronger predictors than log(n) alone
+
+**New Target Metrics**:
+- **k99**: Minimum k where AUC ≥ 0.99 × max AUC
+- **CEI** (Context Efficiency Index): n / k99 (normalizes context requirements)
+- Questions now: Does CEI follow a law? Is CEI predictable from meta-features?
+
+**Experiment 13 Phase A Restructure**:
+- Measures complete AUC curves: k ∈ [32, 64, 128, 256, 512, 1024, 2048, 4096, 8192, 16384, full]
+- Extracts k99 for each dataset
+- Computes CEI as n / k99
+- Records all meta-features alongside results
+- Outputs: JSON with complete curve + k99 + CEI + meta-features
+
+### Why k99 and CEI Are Stronger
+
+| Aspect | Old ("Optimal k") | New ("k99 + CEI") |
+|--------|-------------------|-------------------|
+| Defensibility | Subjective (what is "optimal"?) | Objective (≥99% of max) |
+| Practitioner value | Unclear | Direct (min sufficient compute) |
+| Empirical law | "k varies by dataset" | "CEI ∝ f(meta-features)?" |
+| Comparison | vs heuristics | vs LOOCV meta-model |
+
+### The Refined Roadmap
+
+**Phase A: Data Collection** (Priority 1)
+1. Curate 30-50 OpenML datasets (size buckets, domain diversity)
+2. For each: measure complete curve (k=32 to full)
+3. Extract: k99, CEI, meta-features (rich)
+4. Output: JSON with all measurements
+
+**Phase B: Meta-Model Training** (After Phase A)
+1. Collect (meta-features, k99) pairs from all 30-50 datasets
+2. Train regressors: Linear, Ridge, RF, XGBoost, CatBoost
+3. Evaluate via LOOCV: train on 29, test on 1 (repeat 30×)
+4. Report: correlation, RMSE, statistical significance (Wilcoxon, Friedman)
+5. Compare against baselines: fixed k ∈{256, 512, 1024}, √n, log₂(n), 0.05n, 0.1n
+
+**Phase C: CEI Law Characterization** (After Phase A)
+1. Plot CEI vs n (all 30-50 datasets)
+2. Analyze: Does CEI follow a pattern? (constant, log(n), √n?)
+3. Can CEI be predicted from meta-features?
+4. Ask: Is there a universal context-efficiency law?
+
+**Phase D: Selection Methods** (Supporting, after k99 estimated)
+1. At predicted k99: compare random vs K-Means vs FPS
+2. Measure: accuracy, runtime, memory
+3. Answer: Does selection method matter when k is optimized?
+
+### No Paper Writing Until Phase A Complete
+
+Currently: 4 measurements (too weak)  
+After Phase A: 30-50 datasets × 11 k values = 330-550 measurements (strong)  
+
+Only then: Write claims backed by empirical breadth.
+
+### Effort Estimate
+
+- **With GPU**: Phase A ≈ 2-3 hours (1 dataset ≈ 2-4 min × 30-50)
+- **Without GPU**: Phase A ≈ 15-22 hours (1 dataset ≈ 30-45 min × 30-50)
+- Phases B-D: ≈ 1 week (meta-model training, analysis, visualization)
+
+---
+
 ## Part 25: Current Status and Next Steps (2026-07-22)
 
 ### What's Complete
