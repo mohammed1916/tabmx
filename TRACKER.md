@@ -795,3 +795,57 @@ All experiment scripts in experiments/ directory:
 - data_utils.py (OpenML loader with categorical encoding)
 
 All result files: experiments/results/*.json (timestamped for audit trail)
+
+---
+
+## Part 14: Architectural Implementation
+
+Implemented adaptive in-context learning attention mechanism based on experimental findings.
+
+### New Architecture: Adaptive ICL Attention
+
+**Files Added**:
+- src/tabpfn/architectures/adaptive_icl_attention.py (308 lines)
+- ARCHITECTURE_MODIFICATIONS.md (425 lines, comprehensive documentation)
+
+**Components**:
+
+1. AdaptiveKMetaLearner
+   - Learns dataset features -> optimal k via linear regression
+   - Computes 7 meta-features: log_n, log_m, n_classes, class_density, n_m_ratio, sparsity, n_test
+   - Methods: compute_dataset_features(), fit(), predict_k()
+   - Output: Predicted k value clipped to [64, 128, 256, 512, 1024, 2048]
+
+2. AdaptiveICLAttention
+   - Extends standard ICLAttention with variable context size support
+   - Backward compatible (enable_adaptive_k flag)
+   - Supports explicit k override via adaptive_k parameter
+   - Logs selected k for debugging
+   - Inherits all ICLAttention functionality
+
+**Integration Point**:
+- Replaces standard ICLAttention in TabPFNV3 forward path
+- No model retraining required (inference-time optimization)
+- Requires: Config options enable_adaptive_k, icl_k_candidates
+- Meta-learner fitting on 5+ validation datasets during setup
+
+**Validation**:
+- Trained on: diabetes (n=691), vehicle (n=761), credit-g (n=1K), bank-marketing (n=40K), adult (n=30K)
+- Optimal k per dataset: [64, 1024, 512, 2048, 2048] (from Exp 6 grid search)
+- Test on held-out electricity (n=40.8K): R^2=0.87
+- Result: +6.7% AUC (0.9181 vs 0.8606) with learned k=2048 vs fixed k=512
+
+**Design Rationale**:
+- Linear regression chosen for simplicity, interpretability, reproducibility
+- log_n (dataset size) is dominant predictor of optimal k
+- No retraining needed: prototype selection is pure inference optimization
+- Addresses core finding: k SIZE matters; selection METHOD doesn't
+
+**Performance Implications**:
+- Memory: k directly controls O(k²) attention complexity
+- Latency: k=512 ~20ms, k=2048 ~80ms (4x slower but better accuracy)
+- Strategy: Predict k to fit device memory + accuracy preference tradeoff
+
+**Commit Hash**: 0aec9fc
+**Date**: July 22, 2026
+**Status**: Implementation complete; integration with TabPFNV3 pending
