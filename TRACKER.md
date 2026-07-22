@@ -1716,9 +1716,23 @@ The experiment should evolve from "extended scaling" into "context-efficiency sc
 
 ### Why This Redesign Matters
 
-Original exp13 measured TabPFN at its default settings. This answers "Can TabPFN scale?" (interesting but not central to paper).
+**Critical Context**: TabPFN-3 technical report (https://arxiv.org/pdf/2605.13986) already demonstrates:
+- Scaling to 1 million rows
+- Extensive scaling curves, runtime curves, memory curves
+- Comparisons against GBDTs across many benchmarks
 
-Redesigned exp13 measures context efficiency across k values and dataset sizes. This directly answers "How many prototypes do we actually need?" — the paper's core research question.
+Therefore, claiming "TabPFN scales beyond 10K" is **no longer novel**.
+
+**Our Paper's Unique Contributions** (not covered by TabPFN-3):
+1. **Context efficiency**: How much k is actually needed? Can we achieve 99% AUC with 50% fewer prototypes?
+2. **Predicting k**: Linear meta-model to predict optimal k from 7 dataset features
+3. **Prototype selection**: Random vs K-Means vs FPS vs importance-weighted sampling
+
+These are orthogonal to TabPFN-3's focus on architectural capacity. They study **necessity**, not capacity.
+
+Original exp13 measured TabPFN at its default settings (answered "can it scale?" — already known).
+
+Redesigned exp13 measures context efficiency across k values and dataset sizes (answers "how much context suffices?" — novel and differentiates from TabPFN-3).
 
 ---
 
