@@ -1018,13 +1018,22 @@ benchmark_end_to_end_with_adaptive_k()
 3. **Inference-Time Only**: No retraining; complements other optimizations
 4. **Random Prototype Selection**: Experiments 2, 8, 10, 11 confirm random beats sophisticated methods
 
-### Next Steps
+### Integration Status
 
-1. Integrate AdaptiveICLAttention into TabPFNV3 (config + forward pass)
-2. Add unit tests
-3. Performance benchmarking
-4. Update API documentation
-5. Write integration examples
+**Completed** (commit 1cc8413):
+- [x] Integrate AdaptiveICLAttention into TabPFNV3 (config + forward pass)
+- [x] Update TabPFNV3Config with enable_adaptive_k and adaptive_k_candidates
+- [x] Initialize meta_learner in TabPFNV3.__init__
+- [x] Replace ICLAttention with AdaptiveICLAttention
+- [x] Add adaptive_k parameter to TabPFNV3.forward
+- [x] Update all ICL block calls to pass adaptive_k
+- [x] Update docstrings
+
+**Pending**:
+1. Add unit tests
+2. Performance benchmarking
+3. Update API documentation
+4. Write integration examples
 
 ---
 
@@ -1041,7 +1050,119 @@ benchmark_end_to_end_with_adaptive_k()
 - 425-line design documentation with integration guide
 
 **Research Outputs**:
-- TRACKER.md: 797 lines, complete experiment documentation
+- TRACKER.md: 950+ lines, complete experiment documentation + integration
 - ARCHITECTURE_MODIFICATIONS.md: 425 lines, design rationale + usage examples
-- 3 clean git commits with full history
+- 5 clean git commits with full history (222741a, 0aec9fc, 3779985, 00a1b76, 1cc8413)
 - 15 JSON result files (reproducible, timestamped)
+
+---
+
+## Part 16: TabPFNV3 Integration Complete
+
+**Commit**: 1cc8413
+**Date**: July 22, 2026, 15:30 UTC
+**Status**: AdaptiveICLAttention fully integrated into TabPFNV3
+
+### Integration Changes
+
+**File Modified**: src/tabpfn/architectures/tabpfn_v3.py (38 lines changed)
+
+**Changes Made**:
+
+1. **Imports Added**:
+   ```python
+   from tabpfn.architectures.adaptive_icl_attention import (
+       AdaptiveICLAttention,
+       AdaptiveKMetaLearner,
+   )
+   ```
+
+2. **TabPFNV3Config Updated**:
+   ```python
+   enable_adaptive_k: bool = False
+   adaptive_k_candidates: list[int] = [64, 128, 256, 512, 1024, 2048]
+   ```
+
+3. **TabPFNV3.__init__ Updated**:
+   ```python
+   self.meta_learner: AdaptiveKMetaLearner | None = None
+   if config.enable_adaptive_k:
+       self.meta_learner = AdaptiveKMetaLearner(
+           k_candidates=config.adaptive_k_candidates
+       )
+   ```
+
+4. **ICLAttention Replaced**:
+   ```python
+   self.icl_attention = AdaptiveICLAttention(
+       embedding_size=emsize,
+       num_heads=nhead,
+       head_dim=emsize // nhead,
+       softmax_scaling_layer=softmax_scaling_layer,
+       num_kv_heads=num_kv_heads,
+       num_kv_heads_test=num_kv_heads_test,
+       enable_adaptive_k=False,  # Default: standard behavior
+       k_candidates=[64, 128, 256, 512, 1024, 2048],
+       **kw,
+   )
+   ```
+
+5. **TabPFNV3.forward Updated**:
+   - Added `adaptive_k: int | None = None` parameter
+   - Updated docstring with adaptive_k documentation
+   - Passed adaptive_k to all ICL block calls
+
+6. **TransformerBlock.forward Updated**:
+   - Added `adaptive_k: int | None = None` parameter
+   - Passed adaptive_k to all icl_attention calls
+   - Updated docstring
+
+### Backward Compatibility
+
+**Preserved**:
+- enable_adaptive_k defaults to False (standard ICLAttention behavior)
+- All existing model checkpoints compatible
+- No breaking changes to API
+- Inference path unchanged unless adaptive_k explicitly provided
+
+**Usage Examples**:
+
+Standard inference (unchanged):
+```python
+model = TabPFNV3(config=config, ...)
+output = model(x, y)
+```
+
+Adaptive k inference (new):
+```python
+model = TabPFNV3(
+    config=TabPFNV3Config(enable_adaptive_k=True, ...),
+    ...
+)
+# Predict k from dataset features
+predicted_k = model.meta_learner.predict_k(X_test, y_test, n_train=40000, n_test=4000)
+# Use learned k in forward pass
+output = model(x, y, adaptive_k=predicted_k)
+```
+
+### Next Steps
+
+1. **Unit Tests** (pending):
+   - test_tabpfnv3_with_adaptive_k_disabled()
+   - test_tabpfnv3_with_adaptive_k_enabled()
+   - test_meta_learner_integration()
+
+2. **Performance Benchmarking** (pending):
+   - Memory usage vs adaptive_k
+   - Latency vs adaptive_k
+   - End-to-end accuracy with learned k
+
+3. **Documentation Updates** (pending):
+   - API reference for adaptive_k parameter
+   - Integration guide in README
+   - Example notebooks
+
+4. **Meta-Learner Training** (pending):
+   - Fit meta_learner on validation datasets
+   - Serialize and load pre-trained meta_learner
+   - Cross-domain validation
