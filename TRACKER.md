@@ -1687,13 +1687,25 @@ The experiment should evolve from "extended scaling" into "context-efficiency sc
 ### Implementation Status
 
 - Exp13 split into three phases in code
-- Phase A: **Running now** (2026-07-22 18:35 UTC, background task bfxlpt1gj)
-  - Testing: diabetes (691), credit-g (1K), bank-marketing (40K), electricity (40K), adult (43K), covertype (581K)
-  - Metrics: AUC, fit time, predict time, samples/sec, GPU memory
-- Phase B: Code structure ready, k parameter integration pending (needs AdaptiveICLAttention fix)
-- Phase C: Meta-learning validation function ready
-- Covertype (581K): Included (useful for testing 100K+ behavior)
-- Higgs (11M): Commented out (requires significant RAM, lower priority)
+
+**Phase A Progress** (2026-07-22, background task bjb1fcsdi):
+- ✅ diabetes (768 rows): AUC 0.8556, fit 1.1s, predict 23.1s
+- ✅ credit-g (1K rows): AUC 0.8067, fit 2.1s, predict 27.4s
+- ⏳ bank-marketing (45K rows): Testing at 1K, 5K, 10K, 20K subsamples
+- ⏳ electricity, adult, covertype: Queued
+- Metrics: AUC, fit time, predict time, samples/sec (GPU memory on CUDA only)
+- Current subsample sizes: [1K, 5K, 10K, 20K] (conservative to complete in reasonable time)
+
+**Phase B**: Code structure ready, k parameter integration pending (needs AdaptiveICLAttention reintegration)
+
+**Phase C**: Meta-learning validation function ready
+
+### Dataset Coverage
+
+- Small: diabetes (768), credit-g (1K) — ✅ Working
+- Medium: bank-marketing (45K), electricity (45K), adult (48K) — ⏳ Testing
+- Large: covertype (581K) — Queued
+- Higgs (11M): Commented out (large RAM requirement, lower priority)
 
 ### Dataset Notes
 

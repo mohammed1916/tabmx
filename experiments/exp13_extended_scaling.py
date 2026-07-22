@@ -55,7 +55,8 @@ DATASETS = [
 ]
 
 # Subsample sizes for phase A (scaling study)
-SUBSAMPLE_SIZES = [1000, 5000, 10000, 20000, 30000, 40000, 50000, 75000, 100000]
+# Start conservative; can increase if small datasets work well
+SUBSAMPLE_SIZES = [1000, 5000, 10000, 20000]
 
 # k values for phase B (context efficiency study)
 K_VALUES = [64, 128, 256, 512, 1024, 2048, 4096]
