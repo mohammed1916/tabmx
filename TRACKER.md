@@ -1643,6 +1643,73 @@ Git Commit: d308165
 
 ---
 
+## Part 22: Final Paper Reframing - Single Research Question (2026-07-22)
+
+### Paper Reframing: From "We Scale to 40K" to "What's the Optimal Context Size?"
+
+**Old Framing (Weak)**:
+- TabPFN scales beyond 10K samples
+- We added learned k and random selection works
+- Three separate contributions with weak connections
+
+**New Framing (Strong)**:
+- **Single research question**: "How many prototype samples are sufficient for accurate predictions?"
+- **Unified narrative**: Saturation → Learned sizing → Selection irrelevance
+- **Honest findings**: Context sufficiency (not breakthrough), predictability, simplicity wins
+
+### Core Narrative Arc
+
+**Experiment 1 (Scaling Study)**: Reveals saturation, not scalability
+- 1K → 10K: +0.28% AUC
+- 10K → 40K: +0.025% AUC  
+- **Insight**: Diminishing returns after 10K; context sufficiency, not unlimited scaling
+
+**Experiment 2 (Learned k)**: Context size is dataset-dependent
+- Trained on 5 datasets, tested on electricity (unseen)
+- Learned k=2048 vs fixed k=512: +6.7% AUC
+- **Insight**: One hyperparameter (k) drives most accuracy variance; it's learnable
+
+**Experiment 3 (Selection Methods)**: Method doesn't matter; distribution does
+- Random = K-Means = FPS on accuracy
+- Random 623x faster
+- Uncertainty/importance selection catastrophically fail (-15% to -26% AUC)
+- **Insight**: In-context learning requires representative sampling, not coverage
+
+### Why This Is Stronger
+
+| Aspect | Old | New |
+|--------|-----|-----|
+| **Narrative** | "We did 3 things" | "We answer 1 question" |
+| **Strength** | Scattered | Unified |
+| **Honesty** | Overstated ("we beat Nature") | Admitted ("diminishing returns") |
+| **Novelty** | False ("we scale") | Real ("context is learnable") |
+| **Reviewability** | "Why these 3?" | "Why this question?" (clear) |
+
+### What We're NOT Claiming Anymore
+
+❌ "TabPFN's 10K limit is architectural" → ✅ "Accuracy saturates; limits are context sufficiency"  
+❌ "We achieved breakthrough scaling" → ✅ "Practical scalability exists; gains are minimal"  
+❌ "Learned k is novel ML" → ✅ "Learned k is hyperparameter tuning for context size"  
+❌ "Random beats clustering" → ✅ "Selection method is irrelevant; distribution preservation matters"
+
+### What We ARE Claiming Now
+
+✅ **Context sufficiency is observable and predictable** from dataset properties  
+✅ **Optimal k varies by dataset** and can be estimated from 7 meta-features  
+✅ **Selection method doesn't matter** because random preserves statistics  
+✅ **Practical deployment strategy**: Estimate k → retrieve random samples → run TabPFN
+
+### Key Metrics for This Narrative
+
+| Finding | Strength | Evidence |
+|---------|----------|----------|
+| Saturation at 10K | Strong | 0.944→0.9465 AUC over 4x n; diminishing returns clear |
+| Learned k predictable | Strong | Linear model R²=0.87; generalizes to unseen data |
+| Selection irrelevance | Strong | Random=KMeans=FPS on all tests; uncertainty fails |
+| Distribution preservation | Medium | Hypothesis not directly tested; inferred from results |
+
+---
+
 ## Part 21: Single Comprehensive 10-Page Publication (2026-07-22 Final)
 
 ### Paper: "Beyond 10K Samples: Scaling, Optimization, and Efficiency of TabPFN Foundation Models"
