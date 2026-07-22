@@ -30,12 +30,18 @@ from tabpfn.architectures.kv_cache import (
     KVCacheEntry,
     QuantizedKVCacheEntry,
 )
-from tabpfn.architectures.tabpfn_v3 import ICLAttention
 
 if TYPE_CHECKING:
     from torch.nn.attention import SDPBackend
+    from tabpfn.architectures.tabpfn_v3 import ICLAttention as _ICLAttention
 
 _logger = _logging.getLogger(__name__)
+
+
+def _get_icl_attention_base():
+    """Lazy import to avoid circular imports."""
+    from tabpfn.architectures.tabpfn_v3 import ICLAttention
+    return ICLAttention
 
 
 class AdaptiveKMetaLearner(nn.Module):
@@ -182,7 +188,7 @@ class AdaptiveKMetaLearner(nn.Module):
         return int(k_nearest)
 
 
-class AdaptiveICLAttention(ICLAttention):
+class AdaptiveICLAttention(_get_icl_attention_base()):
     """ICL attention with learned prototype selection based on dataset features.
 
     Extends ICLAttention to support variable context size k predicted from

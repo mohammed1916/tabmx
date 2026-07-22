@@ -40,10 +40,11 @@ import torch.nn.functional as F  # noqa: N812
 import torch.utils.checkpoint
 from torch import nn
 
-from tabpfn.architectures.adaptive_icl_attention import (
-    AdaptiveICLAttention,
-    AdaptiveKMetaLearner,
-)
+# Lazy import to avoid circular dependency during architecture initialization
+# from tabpfn.architectures.adaptive_icl_attention import (
+#     AdaptiveICLAttention,
+#     AdaptiveKMetaLearner,
+# )
 from tabpfn.architectures.interface import (
     Architecture,
     ArchitectureConfig,
