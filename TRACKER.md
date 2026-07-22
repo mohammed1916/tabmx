@@ -1687,11 +1687,20 @@ The experiment should evolve from "extended scaling" into "context-efficiency sc
 ### Implementation Status
 
 - Exp13 split into three phases in code
-- Phase A: Running (diabetes, credit-g working; larger datasets pending)
+- Phase A: **Running now** (2026-07-22 18:35 UTC, background task bfxlpt1gj)
+  - Testing: diabetes (691), credit-g (1K), bank-marketing (40K), electricity (40K), adult (43K), covertype (581K)
+  - Metrics: AUC, fit time, predict time, samples/sec, GPU memory
 - Phase B: Code structure ready, k parameter integration pending (needs AdaptiveICLAttention fix)
 - Phase C: Meta-learning validation function ready
-- Covertype (581K): Commented out, can enable when Phase B ready
-- Higgs (11M): Commented out (large RAM requirement, lower priority)
+- Covertype (581K): Included (useful for testing 100K+ behavior)
+- Higgs (11M): Commented out (requires significant RAM, lower priority)
+
+### Dataset Notes
+
+**All datasets are OpenML public benchmarks** — reproducible and citable.
+- **No synthetic datasets**: Only real-world data for publication credibility
+- **Size progression**: 691 → 1K → 40K → 43K → 40K → 581K
+- **This enables**: Honest scaling characterization, not artificial "benchmark beating"
 
 ### Why This Redesign Matters
 
