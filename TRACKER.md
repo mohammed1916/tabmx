@@ -2038,7 +2038,36 @@ Expand to 50+ by systematically searching OpenML for datasets meeting criteria.
 
 ---
 
-## Part 27: Final Evidence-First Framework (2026-07-22, Corrected)
+## Part 27: Current Status - Ready for Data Collection (2026-07-22)
+
+### What's Ready
+✅ exp13 Phase A code (complete, tested on 4 datasets)
+✅ Output format defined (JSON with curves, metadata, runtime, memory)
+✅ Metadata collection implemented (n, m, classes, entropy, imbalance, etc.)
+✅ Paper simplified (honest about scope: data collection is primary, analysis is secondary)
+✅ TRACKER simplified (focused on what to collect, not what to claim)
+
+### The Only Remaining Task
+Curate 50+ OpenML datasets and run Phase A.
+
+Each dataset: collect complete AUC curve (k=32 to full), runtime, memory, metadata.
+Output: JSON with all measurements.
+No theories, no hypotheses, no papers.
+Just clean data.
+
+### Estimated Effort
+- With GPU: 2-3 hours (1 dataset ≈ 2-4 min × 50 = 100-200 min)
+- Without GPU: 15-22 hours (1 dataset ≈ 20-30 min × 50 = 1000-1500 min)
+
+### What Happens After Phase A
+Look at the data. Decide what's interesting:
+- Are curves clean or noisy?
+- Do they cluster by dataset property?
+- Is there saturation?
+- Can we predict k99?
+- Are there mathematical patterns?
+
+The data will tell the story. The paper will follow.
 
 ### Critical Reframing: Evidence First, Not Assumptions
 
