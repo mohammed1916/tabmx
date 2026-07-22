@@ -1,0 +1,32 @@
+[
+  {
+    "dataset": "diabetes",
+    "n_rows": 768,
+    "status": "FAILED",
+    "error": "ICLAttention.forward() got an unexpected keyword argument 'adaptive_k'"
+  },
+  {
+    "dataset": "credit-g",
+    "n_rows": 1000,
+    "status": "FAILED",
+    "error": "ICLAttention.forward() got an unexpected keyword argument 'adaptive_k'"
+  },
+  {
+    "dataset": "bank-marketing",
+    "n_rows": 1000,
+    "status": "FAILED",
+    "error": "ICLAttention.forward() got an unexpected keyword argument 'adaptive_k'"
+  },
+  {
+    "dataset": "adult",
+    "n_rows": 1000,
+    "status": "FAILED",
+    "error": "ICLAttention.forward() got an unexpected keyword argument 'adaptive_k'"
+  },
+  {
+    "dataset": "electricity",
+    "n_rows": 1000,
+    "status": "FAILED",
+    "error": "ICLAttention.forward() got an unexpected keyword argument 'adaptive_k'"
+  }
+]

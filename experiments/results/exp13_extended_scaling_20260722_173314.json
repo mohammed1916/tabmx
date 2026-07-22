@@ -1,0 +1,32 @@
+[
+  {
+    "dataset": "diabetes",
+    "n_rows": 768,
+    "status": "FAILED",
+    "error": "name 'AdaptiveICLAttention' is not defined"
+  },
+  {
+    "dataset": "credit-g",
+    "n_rows": 1000,
+    "status": "FAILED",
+    "error": "name 'AdaptiveICLAttention' is not defined"
+  },
+  {
+    "dataset": "bank-marketing",
+    "n_rows": 1000,
+    "status": "FAILED",
+    "error": "name 'AdaptiveICLAttention' is not defined"
+  },
+  {
+    "dataset": "adult",
+    "n_rows": 1000,
+    "status": "FAILED",
+    "error": "name 'AdaptiveICLAttention' is not defined"
+  },
+  {
+    "dataset": "electricity",
+    "n_rows": 1000,
+    "status": "FAILED",
+    "error": "name 'AdaptiveICLAttention' is not defined"
+  }
+]

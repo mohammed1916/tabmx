@@ -1181,15 +1181,13 @@ class ICLTransformerBlock(nn.Module):
         super().__init__()
         kw = {"device": device, "dtype": dtype}
         assert emsize % nhead == 0
-        self.icl_attention = AdaptiveICLAttention(
+        self.icl_attention = ICLAttention(
             embedding_size=emsize,
             num_heads=nhead,
             head_dim=emsize // nhead,
             softmax_scaling_layer=softmax_scaling_layer,
             num_kv_heads=num_kv_heads,
             num_kv_heads_test=num_kv_heads_test,
-            enable_adaptive_k=False,
-            k_candidates=[64, 128, 256, 512, 1024, 2048],
             **kw,
         )
         self.layernorm = norm_factory(emsize)
@@ -1229,7 +1227,6 @@ class ICLTransformerBlock(nn.Module):
                 self.layernorm(x_BRE),
                 single_eval_pos=single_eval_pos,
                 return_kv=True,
-                adaptive_k=adaptive_k,
             )
             x_BRE = x_BRE + attn_out
         elif cached_kv is not None:
@@ -1243,7 +1240,6 @@ class ICLTransformerBlock(nn.Module):
                     self.layernorm(x),
                     single_eval_pos=single_eval_pos,
                     cached_kv=cached_kv,
-                    adaptive_k=adaptive_k,
                 )
                 return out
 
@@ -1264,7 +1260,6 @@ class ICLTransformerBlock(nn.Module):
                 out, _ = self.icl_attention(
                     self.layernorm(x),
                     single_eval_pos=single_eval_pos,
-                    adaptive_k=adaptive_k,
                 )
                 return out
 
@@ -1868,7 +1863,6 @@ class TabPFNV3(Architecture):
                     0,
                     performance_options.save_peak_memory_factor,
                     cached_kv=kv_cache.kv[layer_idx],
-                    adaptive_k=adaptive_k,
                 )
         else:
             if num_train > 0:
@@ -1883,7 +1877,6 @@ class TabPFNV3(Architecture):
                         num_train,
                         performance_options.save_peak_memory_factor,
                         return_kv=True,
-                        adaptive_k=adaptive_k,
                     )
                     kv_out[layer_idx] = kv_entry
             else:
@@ -1895,14 +1888,12 @@ class TabPFNV3(Architecture):
                             num_train,
                             use_reentrant=False,
                             save_peak_memory_factor=performance_options.save_peak_memory_factor,
-                            adaptive_k=adaptive_k,
                         )
                     else:
                         x_BRiD, _ = block(
                             x_BRiD,
                             num_train,
                             performance_options.save_peak_memory_factor,
-                            adaptive_k=adaptive_k,
                         )
 
         x_BRiD = self.output_norm(x_BRiD)

@@ -1,0 +1,22 @@
+[
+  {
+    "dataset": "diabetes",
+    "n_rows": 691,
+    "n_features": 8,
+    "n_classes": 2,
+    "auc": 0.8555555555555555,
+    "elapsed_sec": 11.420305728912354,
+    "gpu_memory_gb": null,
+    "status": "OK"
+  },
+  {
+    "dataset": "credit-g",
+    "n_rows": 900,
+    "n_features": 20,
+    "n_classes": 2,
+    "auc": 0.8066666666666666,
+    "elapsed_sec": 5.30013370513916,
+    "gpu_memory_gb": null,
+    "status": "OK"
+  }
+]

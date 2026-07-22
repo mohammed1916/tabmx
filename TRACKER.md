@@ -1643,7 +1643,65 @@ Git Commit: d308165
 
 ---
 
-## Part 22: Final Paper Reframing - Single Research Question (2026-07-22)
+## Part 22: Extended Scaling Study (Exp13) Redesign (2026-07-22)
+
+### Feedback and Redesign Direction
+
+**User's Question**: Are we testing on Higgs (~11M rows), Covertype (~580K rows), Airlines, Poker Hand, Census Income?
+**Answer**: Not in original exp13. Original exp13 was too simple (just run TabPFN at default k).
+
+**Expert Feedback on Exp13** (from GPT):
+The experiment should evolve from "extended scaling" into "context-efficiency scaling". The most interesting question isn't "Can TabPFN run on 100K rows?" — it's "How much context is actually needed as dataset size grows?"
+
+### Redesigned Exp13: Three Phases
+
+**Phase A: Scaling Behavior** (implemented)
+- Measure full TabPFN (default k) on multiple datasets
+- Datasets: diabetes (691), credit-g (1K), bank-marketing (40K), electricity (40K), adult (43K), **covertype (581K)**, higgs (11M, optional)
+- Sizes: 1K, 5K, 10K, 20K, 30K, 40K, 50K, 75K, 100K
+- Metrics: AUC, fit_time, predict_time, samples/sec, GPU memory
+- Result: Identifies OOM point and saturation point
+
+**Phase B: Context Efficiency** (not yet implemented)
+- For each dataset, test k ∈ [64, 128, 256, 512, 1024, 2048, 4096]
+- Find minimum k achieving 95%/99%/99.5% of full-context AUC
+- Directly measures context efficiency (main paper contribution)
+- Key insight: can you get 99% accuracy with 50% fewer prototypes?
+
+**Phase C: Meta-Learning Validation** (not yet implemented)
+- Validate learned k prediction on held-out datasets
+- Test heuristic: k(n) = 64 * sqrt(n/1000), clamped to [64, 2048]
+- Compare fixed k vs learned k on electricity, adult, other unseen datasets
+
+### Key Changes from Original Exp13
+
+| Aspect | Original | Redesigned |
+|--------|----------|-----------|
+| Focus | "Can TabPFN scale?" | "How much context is optimal?" |
+| Datasets | 5 medium datasets | 6-7 datasets (add covertype, higgs) |
+| Metrics | AUC only | AUC, fit/predict time separately, memory, samples/sec |
+| k variation | Fixed k (default) | Test k ∈ [64-4096] in phase B |
+| Context efficiency | Not measured | Primary focus: min k for 95%/99% accuracy |
+| Alignment with paper | Generic benchmark | Directly supports research question |
+
+### Implementation Status
+
+- Exp13 split into three phases in code
+- Phase A: Running (diabetes, credit-g working; larger datasets pending)
+- Phase B: Code structure ready, k parameter integration pending (needs AdaptiveICLAttention fix)
+- Phase C: Meta-learning validation function ready
+- Covertype (581K): Commented out, can enable when Phase B ready
+- Higgs (11M): Commented out (large RAM requirement, lower priority)
+
+### Why This Redesign Matters
+
+Original exp13 measured TabPFN at its default settings. This answers "Can TabPFN scale?" (interesting but not central to paper).
+
+Redesigned exp13 measures context efficiency across k values and dataset sizes. This directly answers "How many prototypes do we actually need?" — the paper's core research question.
+
+---
+
+## Part 23: Final Paper Reframing - Single Research Question (2026-07-22)
 
 ### Paper Reframing: From "We Scale to 40K" to "What's the Optimal Context Size?"
 

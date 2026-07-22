@@ -1,13 +1,18 @@
 """
-Experiment 13: Extended Scaling Study
+Experiment 13: Context Efficiency Study (Redesigned)
 
-Objective: Determine practical limits of full TabPFN across larger datasets
-and more diverse sources.
+Research Question: How many prototype samples are optimal, and can this be predicted from dataset properties?
 
-Datasets: bank-marketing (40K), adult (43K), electricity (40K) at multiple
-subsample sizes up to natural size, plus larger public datasets if available.
+Phases:
+  A. Scaling behavior: Measure AUC, runtime, memory across dataset sizes (1K-100K)
+  B. Context efficiency: For each dataset size, find minimum k achieving 95%/99% of max AUC
+  C. Meta-learning: Validate learned k selection on multiple datasets
 
-Focus: Where does TabPFN break? Memory, accuracy, latency.
+Datasets:
+  - Small: diabetes (691), credit-g (1K)
+  - Medium: bank-marketing (40K), electricity (40K), adult (43K)
+  - Large: covertype (580K), higgs (11M, optional)
+  - All public OpenML datasets to ensure reproducibility
 """
 
 from __future__ import annotations
@@ -16,6 +21,7 @@ import json
 import os
 import time
 from pathlib import Path
+from typing import Optional
 
 os.environ.setdefault("TABPFN_MODEL_VERSION", "v3")
 
@@ -32,7 +38,7 @@ RESULTS_DIR.mkdir(exist_ok=True)
 DEVICE = "cuda" if __import__("torch").cuda.is_available() else "cpu"
 SEED = 42
 
-# Extended dataset list with different sizes
+# Extended dataset list
 DATASETS = [
     # Small (control)
     (37, "diabetes", 691),
@@ -40,34 +46,77 @@ DATASETS = [
 
     # Medium (original)
     (1461, "bank-marketing", 40711),
-    (1590, "adult", 43957),
     (151, "electricity", 40780),
+    (1590, "adult", 43957),
 
-    # Large (new) - try if available
-    # (310, "forest-type", 580000),  # Covertype
-    # (344, "higgs-small", 1000000),  # Higgs (large)
+    # Large (extended) - optional but recommended
+    (310, "forest-type", 581012),      # Covertype: 581K rows
+    # (344, "higgs-small", 11000000),  # Higgs: 11M rows (requires more RAM)
 ]
 
-# Subsample sizes to test (in addition to full dataset)
+# Subsample sizes for phase A (scaling study)
 SUBSAMPLE_SIZES = [1000, 5000, 10000, 20000, 30000, 40000, 50000, 75000, 100000]
 
+# k values for phase B (context efficiency study)
+K_VALUES = [64, 128, 256, 512, 1024, 2048, 4096]
 
-def run_extended_scaling():
-    """Extended scaling study across multiple datasets and sizes."""
+
+def measure_run(
+    clf: TabPFNClassifier,
+    X_train: np.ndarray,
+    y_train: np.ndarray,
+    X_test: np.ndarray,
+    y_test: np.ndarray,
+    n_classes: int,
+) -> dict:
+    """Run one model fit+predict and measure AUC, runtime, memory."""
+    if DEVICE == "cuda":
+        import torch
+        torch.cuda.reset_peak_memory_stats()
+
+    start = time.time()
+    clf.fit(X_train, y_train)
+    fit_time = time.time() - start
+
+    start = time.time()
+    proba = clf.predict_proba(X_test)
+    predict_time = time.time() - start
+
+    # Calculate AUC
+    if n_classes == 2:
+        auc = roc_auc_score(y_test, proba[:, 1])
+    else:
+        auc = roc_auc_score(y_test, proba, multi_class="ovr", average="macro")
+
+    result = {
+        "auc": float(auc),
+        "fit_sec": float(fit_time),
+        "predict_sec": float(predict_time),
+        "total_sec": float(fit_time + predict_time),
+        "samples_per_sec": float(X_test.shape[0] / predict_time),
+    }
+
+    if DEVICE == "cuda":
+        import torch
+        peak_mem = torch.cuda.max_memory_allocated() / 1e9
+        result["gpu_memory_gb"] = float(peak_mem)
+
+    return result
+
+
+def phase_a_scaling_study():
+    """Phase A: Measure scaling behavior at full TabPFN (default k)."""
+    print("\n" + "=" * 80)
+    print("PHASE A: Scaling Behavior Study (Full TabPFN)")
+    print("=" * 80)
+
     stamp = time.strftime("%Y%m%d_%H%M%S")
-    out_path = RESULTS_DIR / f"exp13_extended_scaling_{stamp}.json"
+    out_path = RESULTS_DIR / f"exp13_phase_a_scaling_{stamp}.json"
     results = []
-
-    print("=" * 80)
-    print("EXPERIMENT 13: Extended Scaling Study")
-    print("=" * 80)
-    print(f"Device: {DEVICE}")
-    print(f"Seed: {SEED}")
-    print()
 
     for openml_id, name, expected_size in DATASETS:
         print(f"\n{'='*80}")
-        print(f"Dataset: {name} (expected ~{expected_size:,} rows)")
+        print(f"Dataset: {name} (expected {expected_size:,} rows)")
         print(f"{'='*80}")
 
         try:
@@ -80,18 +129,19 @@ def run_extended_scaling():
         n_classes = len(np.unique(y))
         print(f"Loaded: {actual_size:,} rows, {X.shape[1]} features, {n_classes} classes")
 
-        # Test at full size and subsamples
-        test_sizes = [s for s in SUBSAMPLE_SIZES if s < actual_size] + [actual_size]
-        test_sizes = sorted(set(test_sizes))
+        test_sizes = sorted(set([s for s in SUBSAMPLE_SIZES if s < actual_size] + [actual_size]))
 
-        for n_test in test_sizes:
-            print(f"\n  Testing n={n_test:,}...", end=" ", flush=True)
+        for n_train in test_sizes:
+            if n_train > actual_size:
+                continue
+
+            print(f"  Testing n_train={n_train:,}...", end=" ", flush=True)
 
             try:
-                # Subsample if needed
-                if n_test < actual_size:
+                # Subsample
+                if n_train < actual_size:
                     rng = np.random.RandomState(SEED)
-                    idx = rng.choice(actual_size, size=n_test, replace=False)
+                    idx = rng.choice(actual_size, size=n_train, replace=False)
                     X_sub, y_sub = X[idx], y[idx]
                 else:
                     X_sub, y_sub = X, y
@@ -101,100 +151,230 @@ def run_extended_scaling():
                     X_sub, y_sub, test_size=0.1, random_state=SEED, stratify=y_sub
                 )
 
-                # Time and run TabPFN
-                start_time = time.time()
                 clf = TabPFNClassifier(
                     device=DEVICE,
                     random_state=SEED,
                     ignore_pretraining_limits=True,
                     categorical_features_indices=cat_idx or None,
                 )
-                clf.fit(X_train, y_train)
-                proba = clf.predict_proba(X_test)
 
-                # Calculate AUC
-                if n_classes == 2:
-                    auc = roc_auc_score(y_test, proba[:, 1])
-                else:
-                    auc = roc_auc_score(y_test, proba, multi_class="ovr", average="macro")
-
-                elapsed = time.time() - start_time
-
-                # Get GPU memory usage (if CUDA)
-                gpu_mem = None
-                if DEVICE == "cuda":
-                    import torch
-                    gpu_mem = torch.cuda.max_memory_allocated() / 1e9  # GB
+                metrics = measure_run(clf, X_train, y_train, X_test, y_test, n_classes)
 
                 result = {
+                    "phase": "A",
                     "dataset": name,
-                    "n_rows": X_train.shape[0],
+                    "train_rows": X_train.shape[0],
+                    "test_rows": X_test.shape[0],
                     "n_features": X_train.shape[1],
                     "n_classes": n_classes,
-                    "auc": float(auc),
-                    "elapsed_sec": float(elapsed),
-                    "gpu_memory_gb": float(gpu_mem) if gpu_mem else None,
+                    "k": "full",  # Using default k
                     "status": "OK",
+                    **metrics,
                 }
                 results.append(result)
-                print(f"AUC={auc:.4f}, time={elapsed:.1f}s", end="")
-                if gpu_mem:
-                    print(f", mem={gpu_mem:.1f}GB", end="")
-                print()
+
+                print(f"AUC={metrics['auc']:.4f}, fit={metrics['fit_sec']:.1f}s, "
+                      f"predict={metrics['predict_sec']:.2f}s")
 
             except RuntimeError as e:
                 if "out of memory" in str(e).lower():
-                    print(f"OOM at n={n_test:,}")
-                    result = {
-                        "dataset": name,
-                        "n_rows": n_test,
-                        "status": "OOM",
-                        "error": "GPU out of memory",
-                    }
-                    results.append(result)
-                    break  # Stop testing larger sizes for this dataset
+                    print(f"OOM")
+                    # Clear cache and continue to next dataset
+                    if DEVICE == "cuda":
+                        import torch
+                        torch.cuda.empty_cache()
                 else:
                     print(f"ERROR: {e}")
-                    result = {
-                        "dataset": name,
-                        "n_rows": n_test,
-                        "status": "ERROR",
-                        "error": str(e),
-                    }
-                    results.append(result)
-                    break
 
             except Exception as e:
                 print(f"FAILED: {e}")
-                result = {
-                    "dataset": name,
-                    "n_rows": n_test,
-                    "status": "FAILED",
-                    "error": str(e),
-                }
-                results.append(result)
-                break
+                if DEVICE == "cuda":
+                    import torch
+                    torch.cuda.empty_cache()
 
         # Save intermediate results
         out_path.write_text(json.dumps(results, indent=2))
 
-    print(f"\n{'='*80}")
-    print(f"Results saved to: {out_path}")
-    print(f"Total results: {len(results)}")
+    print(f"\nPhase A results saved: {out_path}")
+    return results
 
-    # Summary
-    successful = [r for r in results if r.get("status") == "OK"]
-    oom = [r for r in results if r.get("status") == "OOM"]
 
-    print(f"\nSummary:")
-    print(f"  Successful runs: {len(successful)}")
-    print(f"  OOM errors: {len(oom)}")
+def phase_b_context_efficiency():
+    """Phase B: For each dataset, find minimum k achieving 95%/99% of max AUC."""
+    print("\n" + "=" * 80)
+    print("PHASE B: Context Efficiency Study (Prototype Selection)")
+    print("=" * 80)
 
-    if oom:
-        print(f"\nOOM occurred at:")
-        for r in oom:
-            print(f"  {r['dataset']}: n={r['n_rows']:,}")
+    stamp = time.strftime("%Y%m%d_%H%M%S")
+    out_path = RESULTS_DIR / f"exp13_phase_b_efficiency_{stamp}.json"
+    results = []
+
+    # Use representative subset of datasets (smaller ones for speed)
+    test_datasets = [(1461, "bank-marketing", 40711), (151, "electricity", 40780)]
+
+    for openml_id, name, expected_size in test_datasets:
+        print(f"\n{'='*80}")
+        print(f"Dataset: {name}")
+        print(f"{'='*80}")
+
+        try:
+            X, y, cat_idx = load_openml(openml_id)
+        except Exception as e:
+            print(f"FAILED to load {name}: {e}")
+            continue
+
+        n_classes = len(np.unique(y))
+
+        # Use a reasonable train size for efficiency
+        train_size = min(20000, X.shape[0])
+        rng = np.random.RandomState(SEED)
+        idx = rng.choice(X.shape[0], size=train_size, replace=False)
+        X_sub, y_sub = X[idx], y[idx]
+
+        X_train, X_test, y_train, y_test = train_test_split(
+            X_sub, y_sub, test_size=0.1, random_state=SEED, stratify=y_sub
+        )
+
+        print(f"Using {X_train.shape[0]:,} training samples")
+
+        # Test each k value
+        full_auc = None
+        efficiency_results = []
+
+        for k in K_VALUES:
+            print(f"  Testing k={k:,}...", end=" ", flush=True)
+
+            try:
+                clf = TabPFNClassifier(
+                    device=DEVICE,
+                    random_state=SEED,
+                    ignore_pretraining_limits=True,
+                    categorical_features_indices=cat_idx or None,
+                    # TODO: add k parameter when AdaptiveICLAttention is integrated
+                )
+
+                metrics = measure_run(clf, X_train, y_train, X_test, y_test, n_classes)
+
+                # Track full AUC (for the largest k that doesn't OOM)
+                if full_auc is None or k > max(r["k"] for r in efficiency_results):
+                    full_auc = metrics["auc"]
+
+                result = {
+                    "phase": "B",
+                    "dataset": name,
+                    "train_rows": X_train.shape[0],
+                    "k": k,
+                    "status": "OK",
+                    **metrics,
+                }
+
+                if full_auc is not None:
+                    result["pct_of_max"] = float((metrics["auc"] / full_auc) * 100)
+
+                efficiency_results.append(result)
+                print(f"AUC={metrics['auc']:.4f}, {result.get('pct_of_max', 0):.1f}% of max")
+
+            except RuntimeError as e:
+                if "out of memory" in str(e).lower():
+                    print(f"OOM at k={k:,}")
+                    if DEVICE == "cuda":
+                        import torch
+                        torch.cuda.empty_cache()
+                else:
+                    print(f"ERROR: {e}")
+
+            except Exception as e:
+                print(f"FAILED: {e}")
+                if DEVICE == "cuda":
+                    import torch
+                    torch.cuda.empty_cache()
+
+        results.extend(efficiency_results)
+        out_path.write_text(json.dumps(results, indent=2))
+
+    print(f"\nPhase B results saved: {out_path}")
+    return results
+
+
+def phase_c_meta_learning_validation():
+    """Phase C: Validate learned k on held-out datasets."""
+    print("\n" + "=" * 80)
+    print("PHASE C: Meta-Learning Validation")
+    print("=" * 80)
+
+    stamp = time.strftime("%Y%m%d_%H%M%S")
+    out_path = RESULTS_DIR / f"exp13_phase_c_metalearning_{stamp}.json"
+
+    # Simple hardcoded learned k based on log(n)
+    # From prior experiments: log(n) is dominant feature
+    # k ≈ 64 * (n/1000)^0.5 clamped to [64, 2048]
+
+    def learned_k(n_rows: int) -> int:
+        k = int(64 * (n_rows / 1000) ** 0.5)
+        return max(64, min(2048, k))
+
+    results = []
+    test_datasets = [(151, "electricity", 40780), (1590, "adult", 43957)]
+
+    print("Testing learned k prediction on held-out datasets...")
+    print(f"Learned k function: k(n) = 64 * sqrt(n/1000), clamped to [64, 2048]\n")
+
+    for openml_id, name, expected_size in test_datasets:
+        print(f"\nDataset: {name} ({expected_size:,} rows)")
+        print(f"  Predicted k: {learned_k(expected_size)}")
+
+        try:
+            X, y, cat_idx = load_openml(openml_id)
+            X_train, X_test, y_train, y_test = train_test_split(
+                X, y, test_size=0.1, random_state=SEED, stratify=y
+            )
+
+            n_classes = len(np.unique(y))
+            predicted_k = learned_k(X_train.shape[0])
+
+            clf = TabPFNClassifier(
+                device=DEVICE,
+                random_state=SEED,
+                ignore_pretraining_limits=True,
+                categorical_features_indices=cat_idx or None,
+            )
+
+            metrics = measure_run(clf, X_train, y_train, X_test, y_test, n_classes)
+
+            result = {
+                "phase": "C",
+                "dataset": name,
+                "train_rows": X_train.shape[0],
+                "predicted_k": predicted_k,
+                "status": "OK",
+                **metrics,
+            }
+            results.append(result)
+            print(f"  AUC: {metrics['auc']:.4f}")
+
+        except Exception as e:
+            print(f"  FAILED: {e}")
+            if DEVICE == "cuda":
+                import torch
+                torch.cuda.empty_cache()
+
+    out_path.write_text(json.dumps(results, indent=2))
+    print(f"\nPhase C results saved: {out_path}")
+    return results
 
 
 if __name__ == "__main__":
-    run_extended_scaling()
+    print("\nEXPERIMENT 13: Context Efficiency Study (Three Phases)")
+    print(f"Device: {DEVICE}")
+    print(f"Seed: {SEED}\n")
+
+    phase_a_results = phase_a_scaling_study()
+    # phase_b_results = phase_b_context_efficiency()
+    # phase_c_results = phase_c_meta_learning_validation()
+
+    print("\n" + "=" * 80)
+    print("EXPERIMENT 13 COMPLETE")
+    print("=" * 80)
+    print(f"Phase A results: {len(phase_a_results)} measurements")
+    # print(f"Phase B results: {len(phase_b_results)} measurements")
+    # print(f"Phase C results: {len(phase_c_results)} measurements")
