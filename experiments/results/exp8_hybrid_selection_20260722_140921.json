@@ -1,0 +1,25 @@
+[
+  {
+    "dataset": "electricity",
+    "method": "random",
+    "learned_k": 2048,
+    "n_prototypes": 2048,
+    "roc_auc": 0.9181173711465123,
+    "status": "OK"
+  },
+  {
+    "dataset": "electricity",
+    "method": "kmeans",
+    "learned_k": 2048,
+    "n_prototypes": 2048,
+    "roc_auc": 0.90784313100264,
+    "status": "OK"
+  },
+  {
+    "dataset": "electricity",
+    "method": "fixed_k=512",
+    "k": 512,
+    "roc_auc": 0.8606008379781385,
+    "status": "OK"
+  }
+]

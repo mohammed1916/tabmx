@@ -1,0 +1,22 @@
+[
+  {
+    "dataset": "electricity",
+    "method_random": "random",
+    "method_uncertainty": "entropy",
+    "k": 512,
+    "auc_random": 0.8606008379781385,
+    "auc_uncertain": 0.6348391882325931,
+    "improvement": -26.23302694846787,
+    "status": "OK"
+  },
+  {
+    "dataset": "bank-marketing",
+    "method_random": "random",
+    "method_uncertainty": "entropy",
+    "k": 512,
+    "auc_random": 0.9023143999162996,
+    "auc_uncertain": 0.6725569368322731,
+    "improvement": -25.46312716557989,
+    "status": "OK"
+  }
+]

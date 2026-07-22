@@ -1,0 +1,77 @@
+[
+  {
+    "phase": "train",
+    "dataset": "diabetes",
+    "optimal_k": 64,
+    "val_auc": 0.8711111111111111,
+    "features": {
+      "log_n": 6.421622267806518,
+      "log_m": 2.1972245773362196,
+      "n_classes": 2,
+      "class_density": 0.003257328990228013,
+      "n_m_ratio": 76.75,
+      "sparsity": 0.0,
+      "n_test": 77
+    }
+  },
+  {
+    "phase": "train",
+    "dataset": "vehicle",
+    "optimal_k": 1024,
+    "val_auc": 0.9785635371572872,
+    "features": {
+      "log_n": 6.517671272912275,
+      "log_m": 2.9444389791664403,
+      "n_classes": 4,
+      "class_density": 0.005917159763313609,
+      "n_m_ratio": 37.55555555555556,
+      "sparsity": 0.0,
+      "n_test": 85
+    }
+  },
+  {
+    "phase": "train",
+    "dataset": "credit-g",
+    "optimal_k": 512,
+    "val_auc": 0.8690476190476191,
+    "features": {
+      "log_n": 6.68586094706836,
+      "log_m": 3.044522437723423,
+      "n_classes": 2,
+      "class_density": 0.0025,
+      "n_m_ratio": 40.0,
+      "sparsity": 0.0,
+      "n_test": 100
+    }
+  },
+  {
+    "phase": "train",
+    "dataset": "bank-marketing",
+    "optimal_k": 2048,
+    "val_auc": 0.9298530899227566,
+    "features": {
+      "log_n": 10.495957677342497,
+      "log_m": 2.833213344056216,
+      "n_classes": 2,
+      "class_density": 5.529750055297501e-05,
+      "n_m_ratio": 2260.5,
+      "sparsity": 0.0,
+      "n_test": 4522
+    }
+  },
+  {
+    "phase": "train",
+    "dataset": "adult",
+    "optimal_k": 2048,
+    "val_auc": 0.9089187132368601,
+    "features": {
+      "log_n": 10.57321256315158,
+      "log_m": 2.70805020110221,
+      "n_classes": 2,
+      "class_density": 5.1186241138382e-05,
+      "n_m_ratio": 2790.9285714285716,
+      "sparsity": 0.009385362928730472,
+      "n_test": 4885
+    }
+  }
+]

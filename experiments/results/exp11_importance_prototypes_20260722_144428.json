@@ -1,0 +1,12 @@
+[
+  {
+    "dataset": "electricity",
+    "method_random": "random",
+    "method_importance": "feature_variance",
+    "k": 512,
+    "auc_random": 0.8606008379781385,
+    "auc_importance": 0.7294679612068415,
+    "improvement": -15.237363361087972,
+    "status": "OK"
+  }
+]

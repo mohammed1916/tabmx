@@ -1,0 +1,22 @@
+[
+  {
+    "dataset": "electricity",
+    "n_heads": 1,
+    "k_per_head": 1024,
+    "total_k": 1024,
+    "mean_auc": 0.8886934731451602,
+    "std_auc": 0.0,
+    "n_heads_successful": 1,
+    "status": "OK"
+  },
+  {
+    "dataset": "electricity",
+    "n_heads": 2,
+    "k_per_head": 512,
+    "total_k": 1024,
+    "mean_auc": 0.8661299631391655,
+    "std_auc": 0.005529125161027049,
+    "n_heads_successful": 2,
+    "status": "OK"
+  }
+]
