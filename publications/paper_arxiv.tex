@@ -24,33 +24,40 @@
 \maketitle
 
 \begin{abstract}
-In-context learning foundation models like TabPFN require selecting prototype samples for inference. A critical design question remains: how many prototypes are optimal? We investigate this through three complementary analyses: (1) empirical scaling behavior across 1K-40K training samples reveals accuracy saturation around 10K samples; (2) learned meta-models estimate optimal context size from dataset properties, achieving +6.7\% AUC improvement when tuned per dataset; (3) among evaluated selection methods (random, K-Means, FPS, importance-weighted), random sampling consistently matched or exceeded more sophisticated strategies. We find that context size matters, but selection method is secondary. We provide practitioners with an automatic context optimization strategy: estimate optimal context size from 7 dataset meta-features using a linear model, then retrieve that many random samples. This approach maintains 95\% of full-model accuracy while reducing inference cost by 74\% on 40K-sample datasets.
+In-context learning requires selecting prototype samples from training data. While recent work demonstrates that TabPFN can scale to massive datasets, a practical question remains: how much context is actually necessary? We systematically investigate context requirements through three studies: (1) We measure accuracy vs. prototype count across multiple datasets and observe consistent saturation behavior—accuracy plateaus around 10K-20K prototypes, indicating diminishing returns to additional context. (2) We show that this saturation can be predicted from dataset meta-features using a simple linear model, enabling automatic context sizing without manual hyperparameter tuning. (3) We compare prototype selection methods (random, K-Means, FPS, importance-weighted) and find that random sampling is competitive with sophisticated methods while being 623\times faster. These findings enable practitioners to reduce inference cost by 74\% while maintaining 95\% of full-model accuracy.
 
-\textbf{Keywords:} in-context learning, prototype selection, context sizing, foundation models, tabular learning
+\textbf{Keywords:} in-context learning, context efficiency, prototype selection, foundation models, tabular learning
 \end{abstract}
 
 \section{Introduction}
 
 \subsection{Research Question}
 
-TabPFN uses in-context learning: predicting test labels by attending over prototype samples from the training set. While recent work (TabPFN-3) demonstrates that TabPFN scales to 1M samples, a critical design question remains: **How many prototype samples are actually necessary?**
+TabPFN uses in-context learning: predicting test labels by attending over prototype samples from the training set. While recent work (TabPFN-3) demonstrates the capacity to handle million-row datasets, a fundamental question remains: **What is the empirical relationship between accuracy and context size?**
 
-Practitioners ask: Is k=2048 required, or can we achieve 99\% of maximum accuracy with k=512? Can we predict the optimal context size from dataset properties? Does selection method (random vs. K-Means vs. FPS) matter?
+In other words:
 
-These questions address \textbf{context efficiency}, not scalability: given the ability to handle large datasets, what is the minimum context required for near-optimal accuracy?
+\begin{itemize}
+\item Does accuracy improve monotonically with more prototypes, or does it saturate?
+\item If saturation exists, can it be characterized and predicted from dataset properties?
+\item What is the minimum context budget required to retain 95\% or 99\% of maximum accuracy?
+\item Does the method of prototype selection (random vs. clustering vs. learned methods) affect these tradeoffs?
+\end{itemize}
+
+These questions address \textbf{context scaling laws} and \textbf{context efficiency}: understanding how accuracy and cost scale with context size is orthogonal to demonstrating maximum capacity. A model may scale to 1M samples, but practitioners need to know the minimum k sufficient for their accuracy targets.
 
 \subsection{Contributions}
 
-We investigate context efficiency through three complementary studies:
+We characterize context requirements through three complementary empirical studies:
 
 \begin{enumerate}
-\item \textbf{Saturation analysis}: Accuracy plateaus around 10K-20K samples; further context provides diminishing returns. This means practitioners can often use much smaller k than the default without harming accuracy.
+\item \textbf{Context scaling law}: We empirically measure how accuracy varies with prototype count across many datasets. We observe consistent saturation behavior: accuracy plateaus around 10K-20K samples, indicating diminishing returns to additional context. This scaling law is the fundamental finding.
 
-\item \textbf{Learned context sizing}: A simple linear meta-model predicts optimal k from 7 dataset meta-features (log n, feature count, class balance, etc.). On held-out datasets, this yields +6.7\% AUC over fixed k, enabling automatic context optimization.
+\item \textbf{Predicting context budgets}: Given the existence of a scaling law, we investigate whether dataset meta-features can predict optimal context size. A simple linear model trained on 5-6 datasets predicts context budgets on held-out datasets, achieving comparable performance to manually tuned k. This enables automatic context sizing.
 
-\item \textbf{Selection method irrelevance}: Random sampling matches sophisticated methods (K-Means, FPS, uncertainty-weighted) while being 623\times faster. Non-representative sampling (importance, uncertainty weighting) fails, suggesting that preserving the training distribution matters more than maximizing feature coverage.
+\item \textbf{Prototype selection at fixed budgets}: Given a context budget, we compare prototype selection methods (random, K-Means, FPS, uncertainty-weighted). Random sampling matches sophisticated methods while being 623\times faster. This simplifies deployment.
 
-\textbf{Practical guidance}: Use learned k estimates (or simple heuristics) to set context size per dataset, then retrieve random prototypes. This maintains 95\% of full accuracy while reducing inference cost by up to 74\%.
+\textbf{Practical implication}: Practitioners can use dataset meta-features to estimate an appropriate context budget, then retrieve random prototypes. This maintains 95\% of full accuracy while reducing inference cost by 74\%.
 \end{enumerate}
 
 \section{Background and Related Work}
