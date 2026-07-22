@@ -1,24 +1,15 @@
 """
-Experiment 13: Context Budget Estimation Study
+Experiment 13 Phase A: Complete AUC-vs-k Curves
 
-Core Research Question:
-  For a given dataset, what is the MINIMUM context size (k) needed to achieve 99% of maximum accuracy?
-  Can this be predicted from dataset meta-features (size, dimensionality, class balance, etc.)?
+Goal: Collect complete accuracy curves for 50+ diverse datasets.
+Record: AUC, runtime, GPU memory, dataset metadata.
+Compute: k95, k99, descriptive statistics.
 
-This is an empirical characterization study. The goal is to:
-  1. Collect complete AUC curves (k=32 to full) for 30+ diverse datasets
-  2. Characterize saturation behavior and identify dataset-dependent patterns
-  3. Build a simple predictor for "k99" (minimum k for 99% of max AUC)
-  4. Validate the predictor via leave-one-dataset-out cross-validation
+NO assumptions about what the data will show.
+NO papers until Phase A is complete.
+NO new concepts (CEI, laws, etc) until data is in.
 
-Design principles:
-  - No premature claims from small samples
-  - Empirical evidence first, claims second
-  - All datasets public and reproducible
-  - Complete curves, not single measurements
-  - Focus on k99, not just "optimal k" (more concrete problem)
-
-Datasets: 30+ OpenML datasets (binary+multiclass, small+medium+large, varying features/imbalance)
+Just collect clean, reproducible measurements across diverse datasets.
 """
 
 from __future__ import annotations

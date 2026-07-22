@@ -24,9 +24,9 @@
 \maketitle
 
 \begin{abstract}
-In-context learning foundation models like TabPFN require selecting prototype samples for inference. While recent work demonstrates scaling to massive datasets, an orthogonal question arises: how much context is actually necessary for near-maximum accuracy? We perform the first systematic empirical study of context requirements, measuring accuracy vs. prototype count k ∈ [32, 64, ..., 16384, full] across 50+ diverse OpenML datasets. Our empirical characterization reveals: (1) saturation behavior is prevalent across datasets, with accuracy gains diminishing beyond a dataset-dependent threshold; (2) saturation curves exhibit consistent mathematical forms (exponential, logarithmic, power-law) that can be fitted and compared; (3) dataset properties (size, dimensionality, imbalance) correlate with the saturation point; (4) these patterns enable predicting minimum context budgets (k99: minimum k for 99\% accuracy) from meta-features, with varying prediction accuracy across models; (5) prototype selection method matters less than context size, with random sampling competitive to sophisticated methods. This empirical foundation establishes context sufficiency—not capacity—as the practical constraint for real-world deployment.
+In-context learning foundation models like TabPFN require selecting prototype samples for inference. While recent work demonstrates the capacity to scale to massive datasets, a complementary question remains: how much context is actually necessary to achieve near-maximum accuracy? We present a systematic empirical study measuring accuracy-vs-context curves across 50+ diverse OpenML datasets. For each dataset, we measure accuracy at k ∈ [32, 64, 128, ..., 16384, full], recording runtime and memory alongside accuracy. We compute descriptive statistics (k95, k99, saturation points) and analyze their relationship to dataset properties. This empirical characterization provides the foundation for understanding context requirements in foundation models.
 
-\textbf{Keywords:} in-context learning, context requirements, empirical characterization, saturation analysis, foundation models
+\textbf{Keywords:} in-context learning, context requirements, empirical study, foundation models, tabular learning
 \end{abstract}
 
 \section{Introduction}
@@ -48,21 +48,15 @@ These questions address \textbf{context scaling laws} and \textbf{context effici
 
 \subsection{Contributions}
 
-This paper presents the first systematic empirical study of context requirements for in-context learning foundation models on tabular data.
-
 \begin{enumerate}
-\item \textbf{Comprehensive empirical characterization}: We measure complete accuracy-vs-context curves on 50+ diverse OpenML datasets. We analyze saturation behavior, mathematical forms of curves, and dataset dependencies. This is the primary contribution—understanding what actually happens empirically.
+\item \textbf{Systematic data collection}: We measure complete accuracy-vs-context curves across 50+ curated OpenML datasets, recording AUC, runtime, and GPU memory for each context size.
 
-\item \textbf{Saturation curve analysis}: We investigate whether context-performance curves follow consistent mathematical forms. We fit exponential, logarithmic, power-law, and Gompertz models, compare goodness-of-fit, and ask: do TabPFN curves exhibit universal mathematical structure?
+\item \textbf{Descriptive statistics}: For each dataset, we compute k95, k99, and characterize saturation behavior. We correlate these with dataset properties to understand what drives context requirements.
 
-\item \textbf{Meta-feature correlation}: We analyze which dataset properties (size, dimensionality, imbalance, entropy) correlate most strongly with the saturation point. We report Spearman/Pearson correlations and statistical significance.
-
-\item \textbf{Context budget prediction (secondary)}: Given the correlations identified in (3), we investigate whether saturation points are predictable from meta-features. We evaluate multiple regression models (Linear, Ridge, RF, XGBoost) via LOOCV and compare against simple baselines. Success depends on the data.
-
-\item \textbf{Prototype selection}: Given a dataset's estimated context budget, we compare selection methods (random, K-Means, FPS) and report which minimizes cost while preserving accuracy.
-
-\textbf{Scope}: We focus on understanding and characterizing context requirements. Prediction and selection are secondary contributions that follow naturally from the characterization.
+\item \textbf{Reproducible benchmark}: All measurements use public datasets, fixed random seeds, and standard evaluation methodology. Results are reproducible and extensible.
 \end{enumerate}
+
+The empirical data is the primary contribution. Secondary analyses (prediction, saturation modeling, selection comparison) will be pursued depending on what the data reveals.
 
 \section{Background and Related Work}
 

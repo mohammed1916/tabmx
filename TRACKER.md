@@ -1971,7 +1971,74 @@ Why this is stronger:
 
 ---
 
-## Part 26: Final Evidence-First Framework (2026-07-22, Corrected)
+## Part 26: Data Collection Priority (2026-07-22, Simplified)
+
+**STOP**: Paper wording, CEI definitions, saturation laws, meta-model design.  
+**START**: Collecting 50+ complete AUC-vs-k curves.
+
+The ONLY priority: Get clean, reproducible data. Everything else follows from that.
+
+### Phase A: Data Collection (THE ACTUAL WORK)
+
+**What to collect for EACH of 50+ datasets:**
+
+For k ∈ [32, 64, 128, 256, 512, 1024, 2048, 4096, 8192, 16384, full]:
+- AUC (on test set, 80-20 split)
+- Runtime: fit time, predict time separately
+- GPU memory: peak memory during fit
+- Dataset metadata: n_samples, n_features, n_classes, categorical%, missing%, class entropy, imbalance
+
+**Output format (JSON per dataset):**
+```json
+{
+  "dataset": "bank-marketing",
+  "n_samples": 41211,
+  "n_features": 16,
+  "n_classes": 2,
+  "curves": [
+    {"k": 32, "auc": 0.850, "fit_sec": 1.2, "predict_sec": 0.05, "memory_gb": 2.1},
+    {"k": 64, "auc": 0.885, "fit_sec": 1.5, "predict_sec": 0.08, "memory_gb": 2.3},
+    ...
+    {"k": "full", "auc": 0.920, "fit_sec": 2.1, "predict_sec": 0.15, "memory_gb": 3.8}
+  ],
+  "meta": {
+    "numeric_ratio": 0.75,
+    "categorical_ratio": 0.25,
+    "missing_ratio": 0.02,
+    "class_entropy": 0.95,
+    "minority_class_ratio": 0.3
+  }
+}
+```
+
+**Reproducibility**:
+- Fixed seed (42)
+- Public OpenML datasets only
+- Exact train/test split (stratified, 80-20)
+- Document exact TabPFN version and config
+
+### Datasets to Curate (50+)
+
+Start with a clean, diverse list. Don't overthink—just ensure:
+- Mix of binary and multiclass
+- Range of sizes (100-100K samples)
+- Range of features (5-200)
+- Different domains (finance, health, marketing, census, sensor, etc.)
+
+Example core 15 to start:
+- diabetes (768), credit-g (1K), phishing (11K)
+- churn (5K), magic-gamma (19K), mammography (11K)
+- bank-marketing (41K), nomao (34K), electricity (45K)
+- adult (48K), airlines (54K), jannis (84K)
+- covertype-binary (100K subsample), higgs (100K subsample), car-evaluation (1.7K)
+
+Expand to 50+ by systematically searching OpenML for datasets meeting criteria.
+
+### NO theories, metrics, or papers until Phase A is done.
+
+---
+
+## Part 27: Final Evidence-First Framework (2026-07-22, Corrected)
 
 ### Critical Reframing: Evidence First, Not Assumptions
 
