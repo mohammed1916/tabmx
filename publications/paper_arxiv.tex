@@ -33,28 +33,24 @@ In-context learning foundation models like TabPFN require selecting prototype sa
 
 \subsection{Research Question}
 
-TabPFN uses in-context learning: predicting test labels by attending over prototype samples from the training set. A critical design question remains unanswered: **How many prototype samples are sufficient?**
+TabPFN uses in-context learning: predicting test labels by attending over prototype samples from the training set. While recent work (TabPFN-3) demonstrates that TabPFN scales to 1M samples, a critical design question remains: **How many prototype samples are actually necessary?**
 
-The original Nature paper evaluates only up to 10K samples, leaving three related questions open:
+Practitioners ask: Is k=2048 required, or can we achieve 99\% of maximum accuracy with k=512? Can we predict the optimal context size from dataset properties? Does selection method (random vs. K-Means vs. FPS) matter?
 
-\begin{enumerate}
-\item \textbf{What is the scaling behavior?} Does accuracy improve monotonically with more samples, or does it saturate?
-\item \textbf{Is context size dataset-dependent?} Should practitioners use the same k for all datasets, or optimize k per dataset?
-\item \textbf{How should prototypes be selected?} Does the selection method (random, clustering, learned weighting) matter?
-\end{enumerate}
+These questions address \textbf{context efficiency}, not scalability: given the ability to handle large datasets, what is the minimum context required for near-optimal accuracy?
 
 \subsection{Contributions}
 
-We address these questions empirically:
+We investigate context efficiency through three complementary studies:
 
 \begin{enumerate}
-\item \textbf{Saturation curve}: Accuracy plateaus around 10K-20K samples; further context provides diminishing returns. This suggests a learnable saturation point rather than unlimited scalability.
+\item \textbf{Saturation analysis}: Accuracy plateaus around 10K-20K samples; further context provides diminishing returns. This means practitioners can often use much smaller k than the default without harming accuracy.
 
-\item \textbf{Meta-learned context sizing}: Dataset properties (size, dimensionality, class balance) predict optimal context size. A simple linear meta-model yields +6.7\% AUC when k matches dataset characteristics.
+\item \textbf{Learned context sizing}: A simple linear meta-model predicts optimal k from 7 dataset meta-features (log n, feature count, class balance, etc.). On held-out datasets, this yields +6.7\% AUC over fixed k, enabling automatic context optimization.
 
-\item \textbf{Selection method irrelevance}: Random sampling achieves equivalent accuracy to sophisticated methods (K-Means, FPS, uncertainty-weighted) while being 623\times faster. This suggests prototypes must preserve distribution statistics, not maximize coverage.
+\item \textbf{Selection method irrelevance}: Random sampling matches sophisticated methods (K-Means, FPS, uncertainty-weighted) while being 623\times faster. Non-representative sampling (importance, uncertainty weighting) fails, suggesting that preserving the training distribution matters more than maximizing feature coverage.
 
-\textbf{Practical implication}: Context size matters; selection method does not. Practitioners should estimate optimal k from dataset features, then retrieve that many random samples.
+\textbf{Practical guidance}: Use learned k estimates (or simple heuristics) to set context size per dataset, then retrieve random prototypes. This maintains 95\% of full accuracy while reducing inference cost by up to 74\%.
 \end{enumerate}
 
 \section{Background and Related Work}
