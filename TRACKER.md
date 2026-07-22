@@ -1710,6 +1710,61 @@ Git Commit: d308165
 
 ---
 
+### Paper Status: FINAL (Commit 2a8e978)
+
+**File**: publications/paper_arxiv.tex (545 lines)
+
+**Research Question**: "How many prototype samples do we actually need for accurate in-context learning, and can this be predicted from dataset properties?"
+
+**Single Narrative Arc**:
+1. **Scaling Study (Exp3)**: Reveals saturation, not breakthrough
+   - 1K→10K: +2.8% AUC
+   - 10K→40K: +0.3% AUC
+   - **Insight**: Diminishing returns; context sufficiency, not unlimited scaling
+
+2. **Learned k (Exp6)**: Context size is dataset-dependent
+   - Trained on 5 datasets, tested on electricity (unseen)
+   - Learned k=2048 vs fixed k=512: +6.7% AUC
+   - **Insight**: One hyperparameter (k) drives variance; it's learnable
+
+3. **Selection Methods (Exp2, 8, 10, 11)**: Method doesn't matter; distribution does
+   - Random = K-Means = FPS on accuracy
+   - Random 623x faster
+   - Uncertainty/importance fail catastrophically (-15% to -26% AUC)
+   - **Insight**: Distribution preservation > coverage maximization
+
+**What This Is**:
+- ✅ Characterization study (practical contribution)
+- ✅ Empirically honest (admits limitations)
+- ✅ Experimentally sound (11 complete experiments)
+- ✅ Practically useful (deployment strategy provided)
+
+**What This Is NOT**:
+- ❌ Scalability breakthrough (saturation limits)
+- ❌ Architectural novelty (no model changes)
+- ❌ Advanced ML (linear regression + random sampling)
+- ❌ Claim to beat Nature paper (we characterize, not compete)
+
+**Practical Contribution**:
+```
+Given: New dataset
+Step 1: Extract 7 meta-features
+Step 2: Predict k using linear model
+Step 3: Randomly sample k prototypes
+Step 4: Run TabPFN
+Result: 95% accuracy, 74x speedup
+```
+
+**Expected Venue**: arXiv + workshop (strong fit); weak for ICML main
+
+**Open Questions for Future**:
+- Why does accuracy saturate?
+- Why does random beat clustering?
+- How general is linear meta-model across domains?
+- Can we do online adaptation as distribution shifts?
+
+---
+
 ## Part 21: Single Comprehensive 10-Page Publication (2026-07-22 Final)
 
 ### Paper: "Beyond 10K Samples: Scaling, Optimization, and Efficiency of TabPFN Foundation Models"
