@@ -693,7 +693,7 @@ Each experiment ID references the JSON filename for raw data verification.
 
 ## Part 12: Comprehensive Results Summary
 
-Experiments completed: 11/12 (Exp 7 running; Exp 12 complete)
+Experiments completed: 11/12 (Exp 7 started; Exp 12 not critical for core findings)
 
 ### Experiment Status Overview
 
