@@ -1711,14 +1711,23 @@ Instead of general "context efficiency", use specific problem:
 **Expert Feedback on Exp13** (from GPT):
 The experiment should evolve from "extended scaling" into "context-efficiency scaling". The most interesting question isn't "Can TabPFN run on 100K rows?" — it's "How much context is actually needed as dataset size grows?"
 
-### Redesigned Exp13: Three Phases
+### Exp13 Phase A: Scaling Behavior Study (ONGOING)
 
-**Phase A: Scaling Behavior** (implemented)
-- Measure full TabPFN (default k) on multiple datasets
-- Datasets: diabetes (691), credit-g (1K), bank-marketing (40K), electricity (40K), adult (43K), **covertype (581K)**, higgs (11M, optional)
-- Sizes: 1K, 5K, 10K, 20K, 30K, 40K, 50K, 75K, 100K
-- Metrics: AUC, fit_time, predict_time, samples/sec, GPU memory
-- Result: Identifies OOM point and saturation point
+**Status**: Running (started 2026-07-22 18:44, CPU mode)
+
+**Current Results**:
+- ✅ diabetes (768 rows): AUC 0.8556
+- ✅ credit-g (1K rows): AUC 0.8067
+- ⏳ bank-marketing (45K rows): Testing [1K, 5K, 10K, 20K] subsamples
+- ⏳ electricity, adult, covertype: Queued
+
+**Expected Outcome**: 
+- Identifies saturation point (where AUC plateaus despite larger training sets)
+- Generates k95, k99 benchmarks for each dataset
+- Provides baseline metrics (fit time, predict time, throughput)
+
+**Note**: Running on CPU → slow (diabetes+credit-g took ~50s combined)
+On GPU this would be 10-20x faster, but conceptually results would be the same
 
 **Phase B: Context Efficiency** (not yet implemented)
 - For each dataset, test k ∈ [64, 128, 256, 512, 1024, 2048, 4096]
@@ -1794,7 +1803,97 @@ Redesigned exp13 measures context efficiency across k values and dataset sizes (
 
 ---
 
-## Part 23: Final Paper Reframing - Single Research Question (2026-07-22)
+## Part 24: Current Status and Next Steps (2026-07-22)
+
+### What's Complete
+
+1. **Paper Structure** ✅
+   - Single research question: "How much context is necessary?"
+   - Reframed from scalability to efficiency
+   - Differentiated from TabPFN-3 (which studies capacity)
+   - Ready for exp13 results integration
+
+2. **Architecture** ✅
+   - Removed circular imports (AdaptiveICLAttention → ICLAttention)
+   - TabPFN v3 now runs without errors
+   - exp13 framework implemented
+
+3. **Literature Review** ✅
+   - Identified TabPFN-3 already does scaling
+   - Confirmed our context-budget direction is not covered by TabPFN-3
+   - Understood reviewer perspective: necessity vs capacity
+
+4. **Code Infrastructure** ✅
+   - exp13 Phase A: Full implementation
+   - exp13 Phase B: Code structure ready
+   - exp13 Phase C: Code structure ready
+   - All using OpenML public datasets (no synthetic data)
+
+### What's Running
+
+**Exp13 Phase A** (background task, slow on CPU):
+- Current: diabetes + credit-g complete
+- Expected to finish: bank-marketing, electricity, adult over next 2-4 hours
+- Will produce scaling curves and saturation points
+
+### What Needs to Happen (Priority Order)
+
+#### For Minimum Viable Paper (with current exp13 data):
+
+1. **Complete Phase A** (Exp13 scaling)
+   - Let bank-marketing, electricity, adult finish
+   - Extract k95, k99 from results
+   - Table 1 in paper: dataset size vs saturation point
+
+2. **Update Paper Tables**
+   - Replace placeholder Table 1 with actual Phase A results
+   - Keep existing Exp 6 (learned k) results
+   - Keep existing Exp 2/8 (selection methods) results
+
+3. **Add Baselines Section**
+   - Compare learned k against: fixed k, sqrt(n), log(n)
+   - Show why learned k is better
+   - Include on 5-6 datasets from Phase A
+
+4. **Honest Limitations**
+   - Acknowledge: 5-6 datasets not enough for strong claims
+   - Suggest: 30-50 datasets for production-quality evidence
+   - Frame as "feasibility study" not "solved problem"
+
+#### For Strong Submission (requires more experiments):
+
+5. **Expand Phase A** to 30-50 OpenML datasets
+   - Use LOOCV: train meta-model on N-1, test on 1
+   - Get 30+ cross-validation points
+   - Statistical significance tests
+
+6. **Phase B Context Efficiency** (scaling k systematically)
+   - Currently skipped
+   - Would directly measure k95, k99
+   - More important than current Phase A
+
+7. **Phase C Selection Methods** (at estimated k)
+   - Compare random vs K-Means vs FPS at k99
+   - Answer: does method matter when k is optimized?
+
+### Recommended Submission Strategy
+
+**Option A (Feasibility Study, ~2 weeks)**
+- Complete Phase A on 10-15 OpenML datasets
+- Update paper with real results
+- Frame as "preliminary study" showing direction is promising
+- Honest limitations: small dataset count
+- Target: workshop or fast-track venues
+
+**Option B (Strong Paper, ~4-6 weeks)**
+- Complete Phase A on 30-50 OpenML datasets with LOOCV
+- Implement Phase B (context efficiency at multiple k values)
+- Strong baselines and significance tests
+- Target: peer-reviewed conferences (NeurIPS, ICML presubmission track)
+
+---
+
+## Part 25: Final Paper Reframing - Single Research Question (2026-07-22)
 
 ### Paper Reframing: From "We Scale to 40K" to "What's the Optimal Context Size?"
 
