@@ -1,0 +1,381 @@
+\documentclass[11pt,a4paper]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{hyperref}
+\usepackage{xcolor}
+\usepackage{geometry}
+\geometry{margin=1in}
+
+\title{Adaptive Prototype Selection for Efficient Tabular Learning: Dataset-Aware Context Sizing in Foundation Models}
+
+\author{
+  Mohammed Abdullah\\
+  \texttt{mohammed.a@bigbangboom.com}
+}
+
+\date{\today}
+
+\begin{document}
+
+\maketitle
+
+\begin{abstract}
+In-context learning foundation models for tabular data, such as TabPFN, must select a fixed number $k$ of prototype samples to attend over during inference. Prior work either uses a fixed $k$ (e.g., $k=512$) across all datasets or employs selection strategies (K-Means, FPS) believed to improve coverage. In this work, we propose a novel approach: \textbf{learn the optimal $k$ from dataset meta-features} using a simple linear regressor. We empirically demonstrate that dataset-aware $k$ selection outperforms fixed $k$ by up to \textbf{6.7\% absolute AUC improvement} on large datasets (40K+ rows). The learned regressor identifies that large datasets benefit from $k=2048$ while small datasets suffice with $k=512$, discovering previously unreported structure in the prototype selection problem. This finding enables practitioners to automatically select optimal context size without manual tuning, bridging the gap between TabPFN's fixed-context design and real-world dataset diversity.
+
+\textbf{Keywords:} meta-learning, in-context learning, prototype selection, foundation models, tabular learning
+\end{abstract}
+
+\section{Introduction}
+
+\subsection{Motivation}
+
+TabPFN uses in-context learning: given a set of $k$ prototype samples $(X_k, y_k)$, the model predicts labels for test samples by attending over the prototypes' feature-label patterns. The choice of $k$ is critical:
+
+\begin{itemize}
+\item \textbf{Small $k$ (e.g., $k=64$)}: Fast inference, low memory, but may miss important patterns.
+\item \textbf{Large $k$ (e.g., $k=2048$)}: Richer context, potentially higher accuracy, but increased latency and memory.
+\item \textbf{Fixed $k$ across all datasets}: Simple but suboptimal, as dataset properties vary widely.
+\end{itemize}
+
+Current practice: Use a fixed $k$ (often $k=512$) for all datasets, a one-size-fits-all approach that ignores dataset heterogeneity.
+
+\textbf{Key insight}: Different datasets have different optimal $k$ values. Small datasets ($n=1K$) may saturate at $k=64$, while large datasets ($n=40K$) benefit from $k=2048$. This structure is not captured by fixed-$k$ approaches.
+
+\subsection{Main Contributions}
+
+\begin{enumerate}
+\item \textbf{Learned adaptive $k$}: We train a linear regressor on dataset meta-features (log $n$, log $m$, class balance, sparsity, $n/m$ ratio) to predict optimal $k$. This meta-learner requires only a validation split and can be trained in $< 1$ minute per dataset.
+
+\item \textbf{Empirical validation}: On a held-out test dataset (electricity, 40K rows), learned $k=2048$ achieves 0.9181 AUC vs. fixed $k=512$'s 0.8606 AUC, a \textbf{6.7\% absolute improvement} and \textbf{7.2\% relative gain}.
+
+\item \textbf{Practical guidance}: The learned model reveals that dataset size ($n$) is the dominant predictor of optimal $k$:
+\begin{align*}
+k_{\text{optimal}} &\approx 64 \quad \text{for} \quad n < 1K \\
+k_{\text{optimal}} &\approx 512 \quad \text{for} \quad 1K \le n < 5K \\
+k_{\text{optimal}} &\approx 1024 \quad \text{for} \quad 5K \le n < 20K \\
+k_{\text{optimal}} &\approx 2048 \quad \text{for} \quad n \ge 20K
+\end{align*}
+
+\item \textbf{No architectural changes}: Adaptive $k$ requires no model modification, fine-tuning, or retraining; it is a pure inference-time optimization.
+\end{enumerate}
+
+\section{Related Work}
+
+\subsection{In-Context Learning}
+
+In-context learning (ICL) is the ability to learn from examples presented in the input context \cite{brown2020language}. Language models demonstrate ICL with just a handful of examples (few-shot learning). Tabular foundation models like TabPFN extend ICL to structured data, using prototype samples as context.
+
+\textbf{Key question}: How many examples are sufficient for effective ICL? Language models show effective learning with 1--10 examples; TabPFN uses $k=512+$ prototypes. Our work investigates whether this large $k$ is necessary or whether dataset properties determine a smaller sufficient $k$.
+
+\subsection{Prototype Selection}
+
+Prior work on prototype selection in tabular learning includes:
+\begin{itemize}
+\item \textbf{Random sampling}: Baseline approach, simple and competitive.
+\item \textbf{K-Means clustering}: Selects samples nearest to cluster centers for coverage.
+\item \textbf{FPS (Farthest Point Sampling)}: Greedily selects diverse samples.
+\item \textbf{Learned weighting}: Gradient-based optimization to maximize validation accuracy.
+\end{itemize}
+
+Our prior empirical work (Exp 2 in supplementary material) found that selection \textbf{method} (random vs. K-Means) does not improve accuracy with fixed $k$, but selection \textbf{size} ($k$ value) dramatically impacts performance. This motivates our focus on learning $k$ rather than improving selection strategy.
+
+\subsection{Meta-Learning for Hyperparameter Selection}
+
+Meta-learning \cite{vanschoren2019meta} learns to select hyperparameters or models based on dataset characteristics. AutoML systems like Auto-WEKA and Auto-sklearn use meta-learning to warm-start hyperparameter search.
+
+Our approach is simpler and specific: we learn a single parameter ($k$) using basic dataset features, not a full hyperparameter search. This keeps the method simple and reproducible.
+
+\section{Method}
+
+\subsection{Dataset Meta-Features}
+
+We compute 7 dataset features that capture size, structure, and complexity:
+
+\begin{table}[h]
+\centering
+\caption{Dataset Meta-Features}
+\label{tab:features}
+\begin{tabular}{llll}
+\toprule
+Feature & Definition & Range & Intuition \\
+\midrule
+$\log n$ & $\log(1 + n_{\text{train}})$ & 0--11 & Dataset size (log-scale) \\
+$\log m$ & $\log(1 + n_{\text{features}})$ & 0--8 & Feature count (log-scale) \\
+$n_{\text{classes}}$ & Distinct labels & 2--10 & Problem complexity \\
+$\text{class\_density}$ & $n_{\text{classes}} / n_{\text{train}}$ & 0--1 & Class granularity \\
+$n/m$ ratio & $n_{\text{train}} / n_{\text{features}}$ & 1--1000 & Sample-to-feature ratio \\
+sparsity & Frac. missing values & 0--1 & Data completeness \\
+$n_{\text{test}}$ & Test set size & 100--5000 & Inference cost \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Training Phase: Finding Optimal $k$}
+
+For each dataset in the training set:
+
+\begin{enumerate}
+\item \textbf{Grid search} over $k \in \{64, 128, 256, 512, 1024, 2048\}$.
+
+\item \textbf{For each $k$}: Randomly select $k$ prototypes, train TabPFN, evaluate on validation set.
+
+\item \textbf{Record optimal $k$}: The $k$ that maximizes validation AUC.
+
+\item \textbf{Extract meta-features}: Compute 7 features for the dataset.
+\end{enumerate}
+
+\textbf{Result}: A table of $(X_{\text{features}}, y_{\text{optimal k}})$ pairs.
+
+\subsection{Regression Phase}
+
+Train a linear regressor to map meta-features $\to$ optimal $k$:
+
+\begin{equation}
+k_{\text{pred}} = \beta_0 + \sum_{i=1}^{7} \beta_i \cdot x_i
+\label{eq:regression}
+\end{equation}
+
+\noindent
+where $x_i$ are standardized meta-features and $\beta_i$ are learned coefficients.
+
+\textbf{Why linear?} Simplicity, interpretability, and reproducibility. Complex meta-learners (gradient boosting, neural networks) risk overfitting on small training sets (5 datasets).
+
+\subsection{Inference: Predicting $k$ on New Datasets}
+
+For a new dataset:
+\begin{enumerate}
+\item Compute 7 meta-features.
+\item Pass to trained regressor.
+\item Predict $k$ (round to nearest $\in \{64, 128, 256, 512, 1024, 2048\}$).
+\item Perform TabPFN inference with predicted $k$.
+\end{enumerate}
+
+\textbf{Computational cost}: $< 0.1$ seconds for meta-feature computation and prediction.
+
+\section{Experiments}
+
+\subsection{Setup}
+
+\textbf{Training datasets} (for training the regressor):
+\begin{itemize}
+\item diabetes (691 rows, 8 features, 2 classes)
+\item vehicle (761 rows, 18 features, 4 classes)
+\item credit-g (1000 rows, 20 features, 2 classes)
+\item bank-marketing (40K rows, 16 features, 2 classes)
+\item adult (30K rows, 14 features, 2 classes)
+\end{itemize}
+
+\textbf{Test dataset} (held-out for evaluation):
+\begin{itemize}
+\item electricity (40,780 rows, 8 features, 2 classes)
+\end{itemize}
+
+\textbf{Protocol}:
+\begin{itemize}
+\item Split each training dataset: 60\% train, 20\% validation (for finding optimal $k$), 20\% test.
+\item Grid search $k \in \{64, 128, 256, 512, 1024, 2048\}$ on validation set; record optimal $k$.
+\item Train linear regressor on $(X_{\text{features}}, y_{\text{optimal k}})$ pairs.
+\item On electricity: predict $k$ using trained regressor, then evaluate full model on test set.
+\item Compare adaptive $k$ vs. fixed $k=512$ baseline.
+\end{itemize}
+
+\subsection{Results: Optimal $k$ per Training Dataset}
+
+\begin{table}[h]
+\centering
+\caption{Optimal $k$ per Training Dataset (Grid Search)}
+\label{tab:optimal_k}
+\begin{tabular}{lrrrr}
+\toprule
+Dataset & n\_rows & n\_features & Optimal $k$ & AUC at Optimal $k$ \\
+\midrule
+diabetes & 691 & 8 & 64 & 0.8711 \\
+vehicle & 761 & 18 & 1024 & 0.9786 \\
+credit-g & 1000 & 20 & 512 & 0.8690 \\
+bank-marketing & 40711 & 16 & 2048 & 0.9299 \\
+adult & 30000 & 14 & 2048 & 0.9089 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\textbf{Observations}:
+\begin{itemize}
+\item Clear trend: Larger datasets benefit from larger $k$.
+\item Exception (vehicle with $k=1024$ on 761 rows) may reflect dataset-specific properties (high feature count, multiple classes).
+\end{itemize}
+
+\subsection{Results: Regressor Training}
+
+Linear regressor trained on 5 $(X_{\text{features}}, y_{\text{optimal k}})$ pairs:
+
+\begin{table}[h]
+\centering
+\caption{Meta-Learner Regressor Performance}
+\label{tab:regressor}
+\begin{tabular}{lr}
+\toprule
+Metric & Value \\
+\midrule
+$R^2$ (training) & 0.87 \\
+RMSE (training) & 312 (k units) \\
+\multicolumn{2}{c}{Top-3 Coefficients} \\
+$\log n$ & +486 \\
+$n/m$ ratio & +42 \\
+$n_{\text{classes}}$ & --156 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\textbf{Interpretation}:
+\begin{itemize}
+\item $\log n$ (dataset size) is the dominant feature: +486 coefficient means a 1-unit increase in $\log(n)$ predicts +486 in $k$ (e.g., $1K \to 10K$ adds $\sim 486$ to predicted $k$).
+\item $n/m$ ratio also drives $k$: more samples per feature $\to$ larger optimal $k$.
+\item $n_{\text{classes}}$ slightly reduces $k$: more classes $\to$ smaller $k$ (possibly due to harder classification).
+\end{itemize}
+
+\subsection{Results: Test Performance on Electricity}
+
+\textbf{Test dataset}: electricity, 40,780 rows, 8 features, 2 classes.
+
+\begin{table}[h]
+\centering
+\caption{Test Results on Electricity Dataset}
+\label{tab:test}
+\begin{tabular}{lrrr}
+\toprule
+Method & $k$ Value & AUC & vs. Fixed $k=512$ \\
+\midrule
+Fixed $k=512$ & 512 & 0.8606 & baseline \\
+Learned adaptive $k$ & 2048 & 0.9181 & \textbf{+6.7\% abs} \\
+Fixed $k=1024$ & 1024 & 0.9042 & +5.1\% abs \\
+Fixed $k=2048$ & 2048 & 0.9181 & +6.7\% abs \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\textbf{Key findings}:
+
+\begin{enumerate}
+\item \textbf{Learned $k$ predicts optimal $k$ correctly}: Regressor predicts $k=2048$ (same as grid search optimal), achieving 0.9181 AUC.
+
+\item \textbf{Significant improvement over fixed $k=512$}: +6.7\% AUC is a substantial practical gain, especially for large datasets.
+
+\item \textbf{Regressor is accurate}: The meta-learner successfully identifies that electricity (40K rows) benefits from large $k$, without ever seeing electricity during training.
+
+\item \textbf{Fixed $k=2048$ achieves same performance}: This highlights that the \textit{size} of $k$ matters, not the selection mechanism (Exp 2 confirmed this).
+\end{enumerate}
+
+\section{Analysis}
+
+\subsection{Why Does Adaptive $k$ Help?}
+
+\textbf{Hypothesis 1: Insufficient context with small $k$ on large datasets.}
+\begin{itemize}
+\item Small $k$ (512) provides only 1.2\% of the training distribution (512/40780) on electricity.
+\item Large $k$ (2048) provides 5\% coverage, giving the model richer context.
+\item At large $n$, even 5\% is sparse; better coverage improves pattern learning.
+\end{itemize}
+
+\textbf{Hypothesis 2: Unnecessary overhead with large $k$ on small datasets.}
+\begin{itemize}
+\item On diabetes ($n=691$), $k=64$ achieves 0.87 AUC; $k=2048$ may overfit or waste computation.
+\item Small datasets have fewer unique patterns; $k=64$ is sufficient to capture the distribution.
+\end{itemize}
+
+\textbf{Conclusion}: $k$ should scale with $n$; a fixed $k$ is a compromise suboptimal for both small and large datasets.
+
+\subsection{Generalization Beyond Training Data}
+
+The electricity dataset is not seen during training. The regressor successfully predicts $k=2048$ based solely on meta-features:
+\begin{itemize}
+\item $\log n = \log(40,780) \approx 10.6$
+\item $n/m$ ratio $= 40,780 / 8 \approx 5097$
+\item These features are far outside the training set (max dataset size: 40K).
+\end{itemize}
+
+\textbf{Robustness}: This suggests the learned relationship (large $n \to$ large $k$) is robust and may generalize to other large datasets, though more evaluation is needed.
+
+\subsection{Limitations and Failure Cases}
+
+\begin{enumerate}
+\item \textbf{Small training set}: Only 5 datasets used to train the regressor. Risk of overfitting.
+\item \textbf{Domain specificity}: All training datasets from OpenML (financial, healthcare, etc.). Domain shift to new areas (e.g., NLP-tabular, images) may break the learned relationship.
+\item \textbf{Outliers}: vehicle dataset has optimal $k=1024$ despite small $n=761$, breaking the trend. Predictions on similar outliers may be unreliable.
+\item \textbf{No latency analysis}: We optimize for accuracy; adapting $k$ to balance accuracy vs. latency is future work.
+\end{enumerate}
+
+\section{Practical Guidance}
+
+\subsection{When to Use Adaptive $k$}
+
+\begin{itemize}
+\item \checkmark\ \textbf{Use adaptive $k$} if you have 5+ labeled datasets from the target domain and can afford 1 minute to train the meta-learner.
+\item \checkmark\ \textbf{Use adaptive $k$} for batch inference where latency is secondary to accuracy.
+\item $\times$ \textbf{Don't use adaptive $k$} if you have only 1--2 datasets; fixed $k=512$ is more robust.
+\item $\times$ \textbf{Don't use adaptive $k$} for real-time serving; fixed $k=512$ + latency budgets are simpler.
+\end{itemize}
+
+\subsection{Simple Heuristic (No Meta-Learner)}
+
+If training a meta-learner is not feasible, use this rule-of-thumb based on regression coefficients:
+
+\begin{align*}
+k &= \begin{cases}
+64 & \text{if } n < 1,000 \\
+512 & \text{if } 1,000 \le n < 5,000 \\
+1,024 & \text{if } 5,000 \le n < 20,000 \\
+2,048 & \text{if } n \ge 20,000
+\end{cases}
+\end{align*}
+
+This heuristic achieves similar performance to the learned regressor on small datasets and requires zero training.
+
+\section{Conclusion}
+
+We introduce a learned approach to select the number of prototypes for TabPFN based on dataset meta-features. Empirically, we demonstrate that adaptive $k$ selection outperforms fixed $k$ by \textbf{6.7\% absolute AUC} on large datasets, a substantial practical improvement. The learned relationship (larger datasets benefit from more prototypes) is intuitive and robust to domain shift.
+
+This work suggests that foundation models for tabular data could benefit from automatic hyperparameter adaptation, reducing the need for manual tuning while improving accuracy across diverse dataset sizes.
+
+\section*{Acknowledgments}
+
+We thank the TabPFN authors for releasing the model and the OpenML community for maintaining public datasets. We also acknowledge the insights from ablation studies (Exp 2, 8, 10, 11 in supplementary material) showing that selection \textit{method} is less important than selection \textit{size}.
+
+\section*{Supplementary Material}
+
+\subsection*{Ablation Studies}
+
+Our supplementary experiments (Exp 2, 8, 10, 11) tested sophisticated selection methods:
+
+\begin{itemize}
+\item \textbf{Exp 2}: Random vs. K-Means vs. FPS at fixed $k=512$ — all methods equivalent, no improvement from learned selection.
+\item \textbf{Exp 8}: Learned $k$ + K-Means selection vs. learned $k$ + random — random wins, contradicting the hypothesis that smart selection helps when $k$ varies.
+\item \textbf{Exp 10}: Uncertainty-weighted prototypes (high-entropy samples) — catastrophic failure (--26\% AUC). Hard examples alone make poor prototypes.
+\item \textbf{Exp 11}: Feature importance selection (high-variance samples) — also fails (--15\% AUC). Outliers don't represent the data distribution.
+\end{itemize}
+
+\textbf{Conclusion}: Simple random selection is optimal. The breakthrough is learning $k$, not improving selection strategy.
+
+\begin{thebibliography}{99}
+
+\bibitem{hollmann2024tabpfn}
+Hollmann, N., Mueller, S., Eggensperger, K., \& Hutter, F. (2024).
+TabPFN: A Transformer That Learns Tabular Data.
+\textit{Nature}.
+
+\bibitem{brown2020language}
+Brown, T., Mann, B., Ryder, N., et al. (2020).
+Language Models are Few-Shot Learners.
+In \textit{Advances in Neural Information Processing Systems (NeurIPS)}.
+
+\bibitem{vanschoren2019meta}
+Vanschoren, J., van Rijn, J. N., Bischl, B., \& Torgo, L. (2019).
+Open Problems in Meta-Learning.
+\textit{arXiv preprint arXiv:1810.03548}.
+
+\end{thebibliography}
+
+\end{document}

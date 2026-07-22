@@ -163,7 +163,7 @@ def run():
             k_predictions.append(int(np.clip(np.round(pred_k), 64, 2048)))
 
         ensemble_k = int(np.median(k_predictions))
-        print(f"[{name}] ensemble predictions: {k_predictions} | median={ensemble_k}")
+        print(f"[{name}] ensemble predictions: {k_predictions}; median={ensemble_k}")
 
         # Evaluate ensemble_k vs fixed_k=512
         auc_ensemble, auc_fixed = None, None
