@@ -40,6 +40,10 @@ import torch.nn.functional as F  # noqa: N812
 import torch.utils.checkpoint
 from torch import nn
 
+from tabpfn.architectures.adaptive_icl_attention import (
+    AdaptiveICLAttention,
+    AdaptiveKMetaLearner,
+)
 from tabpfn.architectures.interface import (
     Architecture,
     ArchitectureConfig,
@@ -125,6 +129,16 @@ class TabPFNV3Config(ArchitectureConfig):
     """Number of KV heads used by test rows in the ICL stage.
     None = same as train rows (i.e. icl_num_kv_heads / standard MHA).
     Any value that divides icl_num_heads is valid (1 = MQA, other = GQA)."""
+
+    # ---- Adaptive k (learned prototype selection) ----
+    enable_adaptive_k: bool = False
+    """If True, learn optimal prototype count k from dataset features.
+    Requires meta_learner to be fitted on validation datasets."""
+
+    adaptive_k_candidates: list[int] = dataclasses.field(
+        default_factory=lambda: [64, 128, 256, 512, 1024, 2048]
+    )
+    """Allowed prototype counts for adaptive k selection and rounding."""
 
     # ---- Output decoder (many-class for multiclass, MLP for regression) ----
     decoder_head_dim: int = 64
@@ -1166,13 +1180,15 @@ class ICLTransformerBlock(nn.Module):
         super().__init__()
         kw = {"device": device, "dtype": dtype}
         assert emsize % nhead == 0
-        self.icl_attention = ICLAttention(
+        self.icl_attention = AdaptiveICLAttention(
             embedding_size=emsize,
             num_heads=nhead,
             head_dim=emsize // nhead,
             softmax_scaling_layer=softmax_scaling_layer,
             num_kv_heads=num_kv_heads,
             num_kv_heads_test=num_kv_heads_test,
+            enable_adaptive_k=False,
+            k_candidates=[64, 128, 256, 512, 1024, 2048],
             **kw,
         )
         self.layernorm = norm_factory(emsize)
@@ -1188,6 +1204,7 @@ class ICLTransformerBlock(nn.Module):
         *,
         cached_kv: KVCacheEntry | QuantizedKVCacheEntry | None = None,
         return_kv: bool = False,
+        adaptive_k: int | None = None,
     ) -> tuple[torch.Tensor, KVCacheEntry | None]:
         """Forward pass with optional KV cache support.
 
@@ -1197,6 +1214,7 @@ class ICLTransformerBlock(nn.Module):
             save_peak_memory_factor: Chunking factor for memory saving.
             cached_kv: Pre-computed K/V for this layer.
             return_kv: If True, also return the K/V cache entry.
+            adaptive_k: Optional learned prototype count for adaptive ICL attention.
 
         Returns:
             ``(output, kv_entry)`` where ``kv_entry`` is ``None`` unless
@@ -1210,6 +1228,7 @@ class ICLTransformerBlock(nn.Module):
                 self.layernorm(x_BRE),
                 single_eval_pos=single_eval_pos,
                 return_kv=True,
+                adaptive_k=adaptive_k,
             )
             x_BRE = x_BRE + attn_out
         elif cached_kv is not None:
@@ -1223,6 +1242,7 @@ class ICLTransformerBlock(nn.Module):
                     self.layernorm(x),
                     single_eval_pos=single_eval_pos,
                     cached_kv=cached_kv,
+                    adaptive_k=adaptive_k,
                 )
                 return out
 
@@ -1243,6 +1263,7 @@ class ICLTransformerBlock(nn.Module):
                 out, _ = self.icl_attention(
                     self.layernorm(x),
                     single_eval_pos=single_eval_pos,
+                    adaptive_k=adaptive_k,
                 )
                 return out
 
@@ -1614,6 +1635,12 @@ class TabPFNV3(Architecture):
         self.use_nan_indicators = config.use_nan_indicators
         kw = {"device": device, "dtype": dtype}
 
+        self.meta_learner: AdaptiveKMetaLearner | None = None
+        if config.enable_adaptive_k:
+            self.meta_learner = AdaptiveKMetaLearner(
+                k_candidates=config.adaptive_k_candidates
+            )
+
         norm_factory = partial(
             _DtypeMatchingRMSNorm,
             elementwise_affine=config.layernorm_elementwise_affine,
@@ -1747,6 +1774,7 @@ class TabPFNV3(Architecture):
         kv_cache: TabPFNV3Cache | None = None,
         return_kv_cache: bool = False,
         x_is_test_only: bool = False,
+        adaptive_k: int | None = None,
         # TODO: test_targets_MB needed because model_loading has a condition
         # on its presence. Clean this up.
         test_targets_MB: torch.Tensor | None = None,
@@ -1763,6 +1791,11 @@ class TabPFNV3(Architecture):
         train labels — the decoder reads ``y[:num_train]`` for the
         many-class head. Outside the cache path, ``x`` is always the full
         dataset and this flag is ignored.
+
+        Args:
+            adaptive_k: Optional learned prototype count for ICL attention.
+                If provided and enable_adaptive_k is True, limits K/V to
+                top-k training samples instead of using all training rows.
         """
         del task_type
         del test_targets_MB
@@ -1834,6 +1867,7 @@ class TabPFNV3(Architecture):
                     0,
                     performance_options.save_peak_memory_factor,
                     cached_kv=kv_cache.kv[layer_idx],
+                    adaptive_k=adaptive_k,
                 )
         else:
             if num_train > 0:
@@ -1848,6 +1882,7 @@ class TabPFNV3(Architecture):
                         num_train,
                         performance_options.save_peak_memory_factor,
                         return_kv=True,
+                        adaptive_k=adaptive_k,
                     )
                     kv_out[layer_idx] = kv_entry
             else:
@@ -1859,12 +1894,14 @@ class TabPFNV3(Architecture):
                             num_train,
                             use_reentrant=False,
                             save_peak_memory_factor=performance_options.save_peak_memory_factor,
+                            adaptive_k=adaptive_k,
                         )
                     else:
                         x_BRiD, _ = block(
                             x_BRiD,
                             num_train,
                             performance_options.save_peak_memory_factor,
+                            adaptive_k=adaptive_k,
                         )
 
         x_BRiD = self.output_norm(x_BRiD)
