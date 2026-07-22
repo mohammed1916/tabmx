@@ -1643,7 +1643,65 @@ Git Commit: d308165
 
 ---
 
-## Part 22: Extended Scaling Study (Exp13) Redesign (2026-07-22)
+## Part 22: Research Direction Refinement - Context Budget Estimation (2026-07-22)
+
+### Expert Feedback on Novel Claims
+
+GPT provided critical guidance on strengthening the paper:
+
+**Current Risk**: Claiming "novel contributions" when evidence base is limited (5-6 datasets, 1 held-out set)
+
+**Safer Frame**: Present research questions, not novelty claims. Example:
+- "We investigate..." vs "We propose..."
+- "Do dataset meta-features predict context requirements?" vs "We have a novel predictor"
+
+**Stronger Evidence Needed**:
+- Current: 5-6 training datasets, 1 test dataset
+- Required: 30-50 OpenML datasets, leave-one-dataset-out CV
+- Comparison baselines: fixed k, sqrt(n), log(n), proportional k
+
+**Refined Research Question**:
+Instead of general "context efficiency", use specific problem:
+
+> **"Learning Context Budgets for Foundation Models on Tabular Data"**
+> Given dataset statistics, estimate the minimum prototype budget achieving ≥99% of full-context performance.
+
+### Core Narrative (Conservative)
+
+1. **Define the problem**: What is the minimum k for 95% / 99% / 99.5% of max AUC?
+2. **Measure scaling laws**: How does AUC change as k increases? Where is saturation?
+3. **Characterize dataset dependence**: Does optimal k follow a pattern? (log n, sqrt n, constant?)
+4. **Propose a budget predictor**: Linear model from 7 meta-features
+5. **Validate broadly**: Leave-one-dataset-out CV on 30+ datasets
+6. **Compare prototype selection**: At the estimated budget, which selection method wins?
+
+### What We Are NOT Yet Claiming
+
+❌ "Our meta-learner is novel" → ✅ "We investigate whether dataset properties predict context requirements"
+❌ "Random beats clustering" → ✅ "Among evaluated selection methods, we observe..."
+❌ "This is the first context-efficient study" → ✅ "We apply this question to foundation models on tabular data"
+
+### Experiment Plan (Revised)
+
+**Phase A (Current)**: Scaling laws on diverse datasets
+- Measure AUC vs k on 30+ OpenML datasets
+- Find k95, k99 for each dataset
+- Characterize scaling patterns (log n? sqrt n? constant?)
+
+**Phase B**: Meta-learning validation
+- Train predictor on subset (N-1 datasets, leave 1 out)
+- Test on held-out dataset
+- Repeat 30+ times (LOOCV)
+- Compare against baselines: fixed k, sqrt(n), log(n)
+
+**Phase C**: Selection method study
+- At each dataset's k99, compare: random, K-Means, FPS
+- Measure runtime, AUC, memory
+- Analyze failure modes (why does importance weighting fail?)
+
+---
+
+## Part 23: Extended Scaling Study (Exp13) Redesign (2026-07-22)
 
 ### Feedback and Redesign Direction
 
