@@ -1867,23 +1867,38 @@ Why this is stronger:
 
 | Aspect | Rating | Status |
 |--------|--------|--------|
-| Research question originality | 7.5-8/10 | Good |
-| Experimental evidence | 4/10 | **Too weak** |
-| Potential (with 30-50 datasets) | 8.5/10 | Excellent if executed |
-| Implementation readiness | 8/10 | Good (code ready) |
+| Research question originality | 7.5-8/10 | Good direction |
+| Experimental evidence | 4/10 | **Far too weak** (4 measurements) |
+| Potential (with 30-50 datasets) | 8.5/10 | Strong if executed rigorously |
+| Implementation readiness | 8/10 | Code ready; need more data |
 
-### The Path Forward
+### The Correct Path Forward
 
-**Do NOT**:
-- Write "findings" from 3-4 measurements
-- Claim saturation is real (yet)
-- Claim k is predictable (yet)
+**The work is not "polish the paper with 4 measurements".**  
+**The work is "collect 30-50 complete curves and then empirically characterize patterns."**
 
-**DO**:
-- Run exp13 Phase A/B on 30-50 datasets
-- Collect complete curves (all k values)
-- Let empirical patterns emerge
-- **Then** make claims backed by breadth of evidence
+**Do NOT do this**:
+- Write claims from 3-4 datasets (too weak, reviewers will reject)
+- Claim "saturation behavior discovered" (it's preliminary observation)
+- Claim "dataset-dependent k" (not established with one dataset)
+
+**Do this instead**:
+1. Collect complete AUC curves on 30-50 diverse OpenML datasets
+   - k ∈ [32, 64, 128, 256, 512, 1024, 2048, 4096, 8192, 16384, full]
+   - Binary + multiclass, small/medium/large, varying features/imbalance
+   - For each: extract k99 (min k for 99% of max AUC)
+
+2. Empirically characterize patterns
+   - Do all datasets show saturation? (or only some?)
+   - Where do curves saturate? (is there a universal pattern?)
+   - Can dataset meta-features predict k99? (meta-feature correlation)
+
+3. **Only then** write claims backed by broad evidence
+   - "Across 30+ datasets, X% show saturation at..."
+   - "Dataset features predict k99 with correlation Y..."
+   - "Predictor beats baselines by Z%..."
+
+This is an empirical characterization paper. The evidence *is* the contribution.
 
 ---
 
