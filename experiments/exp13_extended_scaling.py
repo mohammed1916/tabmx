@@ -64,8 +64,58 @@ DATASETS = [
 # Start conservative; can increase if small datasets work well
 SUBSAMPLE_SIZES = [1000, 5000, 10000, 20000]
 
-# k values for phase B (context efficiency study)
-K_VALUES = [64, 128, 256, 512, 1024, 2048, 4096]
+# k values for phase A (complete curves, from smallest to full)
+K_VALUES = [32, 64, 128, 256, 512, 1024, 2048, 4096, 8192, 16384]
+
+
+def compute_meta_features(X, y):
+    """Compute rich meta-features for dataset characterization."""
+    from sklearn.preprocessing import LabelEncoder
+
+    n_samples, n_features = X.shape
+    n_classes = len(np.unique(y))
+
+    # Basic features
+    features = {
+        "n_samples": n_samples,
+        "n_features": n_features,
+        "n_classes": n_classes,
+        "log_n": np.log(n_samples),
+        "log_m": np.log(n_features),
+    }
+
+    # Numeric/categorical ratio (if mixed types detected)
+    try:
+        numeric_cols = X.select_dtypes(include=[np.number]).shape[1] if hasattr(X, 'select_dtypes') else n_features
+        categorical_cols = n_features - numeric_cols
+        features["numeric_ratio"] = numeric_cols / n_features if n_features > 0 else 1.0
+        features["categorical_ratio"] = categorical_cols / n_features if n_features > 0 else 0.0
+    except:
+        features["numeric_ratio"] = 1.0
+        features["categorical_ratio"] = 0.0
+
+    # Missing values
+    try:
+        missing_ratio = np.isnan(X).sum() / (n_samples * n_features) if np.isnan(X).any() else 0.0
+        features["missing_ratio"] = missing_ratio
+    except:
+        features["missing_ratio"] = 0.0
+
+    # Class entropy (as proxy for imbalance)
+    try:
+        class_counts = np.bincount(y)
+        class_probs = class_counts / n_samples
+        class_entropy = -np.sum(class_probs[class_probs > 0] * np.log2(class_probs[class_probs > 0]))
+        features["class_entropy"] = class_entropy
+        features["minority_class_ratio"] = np.min(class_probs)
+    except:
+        features["class_entropy"] = np.log2(n_classes)
+        features["minority_class_ratio"] = 1.0 / n_classes
+
+    # Ratio metrics
+    features["n_m_ratio"] = n_samples / n_features if n_features > 0 else n_samples
+
+    return features
 
 
 def measure_run(
@@ -111,19 +161,19 @@ def measure_run(
     return result
 
 
-def phase_a_scaling_study():
-    """Phase A: Measure scaling behavior at full TabPFN (default k)."""
+def phase_a_complete_curves():
+    """Phase A: Complete accuracy curves (k=32 to full) for k99 estimation."""
     print("\n" + "=" * 80)
-    print("PHASE A: Scaling Behavior Study (Full TabPFN)")
+    print("PHASE A: Complete Accuracy Curves and k99 Estimation")
     print("=" * 80)
 
     stamp = time.strftime("%Y%m%d_%H%M%S")
-    out_path = RESULTS_DIR / f"exp13_phase_a_scaling_{stamp}.json"
+    out_path = RESULTS_DIR / f"exp13_phase_a_curves_{stamp}.json"
     results = []
 
     for openml_id, name, expected_size in DATASETS:
         print(f"\n{'='*80}")
-        print(f"Dataset: {name} (expected {expected_size:,} rows)")
+        print(f"Dataset: {name} ({expected_size:,} rows expected)")
         print(f"{'='*80}")
 
         try:
@@ -132,32 +182,35 @@ def phase_a_scaling_study():
             print(f"FAILED to load {name}: {e}")
             continue
 
-        actual_size = X.shape[0]
+        n_samples, n_features = X.shape
         n_classes = len(np.unique(y))
-        print(f"Loaded: {actual_size:,} rows, {X.shape[1]} features, {n_classes} classes")
 
-        test_sizes = sorted(set([s for s in SUBSAMPLE_SIZES if s < actual_size] + [actual_size]))
+        # Compute rich meta-features
+        meta_features = compute_meta_features(X, y)
 
-        for n_train in test_sizes:
-            if n_train > actual_size:
-                continue
+        print(f"Loaded: {n_samples:,} samples, {n_features} features, {n_classes} classes")
+        print(f"Meta-features: log(n)={meta_features['log_n']:.2f}, "
+              f"class_entropy={meta_features['class_entropy']:.2f}")
 
-            print(f"  Testing n_train={n_train:,}...", end=" ", flush=True)
+        # Use full dataset (no subsampling for main experiment)
+        X_train, X_test, y_train, y_test = train_test_split(
+            X, y, test_size=0.1, random_state=SEED, stratify=y
+        )
+
+        curve_results = []
+        max_auc = None
+        k99_value = None
+
+        # Test each k value
+        for k in K_VALUES + ["full"]:
+            if k == "full":
+                k_display = "full"
+            else:
+                k_display = k
+
+            print(f"  k={k_display:>5}...", end=" ", flush=True)
 
             try:
-                # Subsample
-                if n_train < actual_size:
-                    rng = np.random.RandomState(SEED)
-                    idx = rng.choice(actual_size, size=n_train, replace=False)
-                    X_sub, y_sub = X[idx], y[idx]
-                else:
-                    X_sub, y_sub = X, y
-
-                # Train/test split
-                X_train, X_test, y_train, y_test = train_test_split(
-                    X_sub, y_sub, test_size=0.1, random_state=SEED, stratify=y_sub
-                )
-
                 clf = TabPFNClassifier(
                     device=DEVICE,
                     random_state=SEED,
@@ -167,38 +220,63 @@ def phase_a_scaling_study():
 
                 metrics = measure_run(clf, X_train, y_train, X_test, y_test, n_classes)
 
+                # Track max AUC (reference point)
+                if k == "full":
+                    max_auc = metrics["auc"]
+
                 result = {
                     "phase": "A",
                     "dataset": name,
-                    "train_rows": X_train.shape[0],
-                    "test_rows": X_test.shape[0],
-                    "n_features": X_train.shape[1],
+                    "n_samples": n_samples,
+                    "n_features": n_features,
                     "n_classes": n_classes,
-                    "k": "full",  # Using default k
+                    "k": k,
                     "status": "OK",
                     **metrics,
+                    **meta_features,
                 }
-                results.append(result)
 
-                print(f"AUC={metrics['auc']:.4f}, fit={metrics['fit_sec']:.1f}s, "
-                      f"predict={metrics['predict_sec']:.2f}s")
+                # Compute k99 on-the-fly (once we have max_auc)
+                if max_auc is not None and metrics["auc"] >= 0.99 * max_auc and k99_value is None:
+                    k99_value = k
+                    result["is_k99"] = True
+                    print(f"AUC={metrics['auc']:.4f} [K99 threshold]", end="")
+
+                curve_results.append(result)
+                print(f"AUC={metrics['auc']:.4f}")
 
             except RuntimeError as e:
                 if "out of memory" in str(e).lower():
                     print(f"OOM")
-                    # Clear cache and continue to next dataset
                     if DEVICE == "cuda":
                         import torch
                         torch.cuda.empty_cache()
+                    break
                 else:
                     print(f"ERROR: {e}")
+                    break
 
             except Exception as e:
                 print(f"FAILED: {e}")
                 if DEVICE == "cuda":
                     import torch
                     torch.cuda.empty_cache()
+                break
 
+        # Add k99 summary to results
+        if k99_value is not None and max_auc is not None:
+            summary = {
+                "dataset": name,
+                "n_samples": n_samples,
+                "k99": k99_value,
+                "max_auc": max_auc,
+                "context_efficiency_index": n_samples / k99_value if isinstance(k99_value, int) else None,
+            }
+            summary.update(meta_features)
+            print(f"Summary: k99={k99_value}, CEI={n_samples / k99_value if isinstance(k99_value, int) else 'unknown':.1f}")
+            curve_results.append(summary)
+
+        results.extend(curve_results)
         # Save intermediate results
         out_path.write_text(json.dumps(results, indent=2))
 
@@ -371,17 +449,26 @@ def phase_c_meta_learning_validation():
 
 
 if __name__ == "__main__":
-    print("\nEXPERIMENT 13: Context Efficiency Study (Three Phases)")
+    print("\nEXPERIMENT 13: Context Budget Estimation via k99 Prediction")
     print(f"Device: {DEVICE}")
     print(f"Seed: {SEED}\n")
 
-    phase_a_results = phase_a_scaling_study()
-    # phase_b_results = phase_b_context_efficiency()
-    # phase_c_results = phase_c_meta_learning_validation()
+    phase_a_results = phase_a_complete_curves()
 
     print("\n" + "=" * 80)
-    print("EXPERIMENT 13 COMPLETE")
+    print("EXPERIMENT 13 PHASE A COMPLETE")
     print("=" * 80)
-    print(f"Phase A results: {len(phase_a_results)} measurements")
-    # print(f"Phase B results: {len(phase_b_results)} measurements")
-    # print(f"Phase C results: {len(phase_c_results)} measurements")
+    print(f"Total measurements: {len(phase_a_results)}")
+
+    # Extract k99 summary
+    k99_summaries = [r for r in phase_a_results if "context_efficiency_index" in r]
+    if k99_summaries:
+        print(f"\nk99 Estimates (minimum context for 99% of max AUC):")
+        for summary in k99_summaries:
+            if "k99" in summary:
+                print(f"  {summary['dataset']:20s}: k99={summary['k99']}, "
+                      f"CEI={summary['context_efficiency_index']:.1f}")
+
+    # Phase B/C disabled for now; enable when k99 analysis is complete
+    # phase_b_results = phase_b_context_efficiency()
+    # phase_c_results = phase_c_meta_learning_validation()

@@ -1872,33 +1872,102 @@ Why this is stronger:
 | Potential (with 30-50 datasets) | 8.5/10 | Strong if executed rigorously |
 | Implementation readiness | 8/10 | Code ready; need more data |
 
-### The Correct Path Forward
+### The Correct Path Forward (Rigorous Empiricism)
 
-**The work is not "polish the paper with 4 measurements".**  
-**The work is "collect 30-50 complete curves and then empirically characterize patterns."**
+**The work is not "polish the paper with 4 measurements."**  
+**The work is "curate a benchmark, collect complete curves, empirically characterize, then write claims."**
 
-**Do NOT do this**:
-- Write claims from 3-4 datasets (too weak, reviewers will reject)
-- Claim "saturation behavior discovered" (it's preliminary observation)
-- Claim "dataset-dependent k" (not established with one dataset)
+#### Step 1: Curate a Rigorous Benchmark
 
-**Do this instead**:
-1. Collect complete AUC curves on 30-50 diverse OpenML datasets
-   - k ∈ [32, 64, 128, 256, 512, 1024, 2048, 4096, 8192, 16384, full]
-   - Binary + multiclass, small/medium/large, varying features/imbalance
-   - For each: extract k99 (min k for 99% of max AUC)
+**Dataset Selection Criteria**:
+- Binary classification (multiclass in phase 2)
+- Public OpenML datasets
+- No severe corruption
+- 500 ≤ samples ≤ 100,000 (no tiny or huge outliers)
+- 5–200 features
+- Mixed categorical/numerical preferred
+- At least 5 datasets per size bucket
 
-2. Empirically characterize patterns
-   - Do all datasets show saturation? (or only some?)
-   - Where do curves saturate? (is there a universal pattern?)
-   - Can dataset meta-features predict k99? (meta-feature correlation)
+**Size Distribution** (aim for 30-50 datasets):
+- Small (500–2K): 8-10 datasets
+- Medium (2K–10K): 8-10 datasets
+- Large (10K–50K): 8-10 datasets
+- Very Large (50K–100K): 6-8 datasets
 
-3. **Only then** write claims backed by broad evidence
-   - "Across 30+ datasets, X% show saturation at..."
-   - "Dataset features predict k99 with correlation Y..."
-   - "Predictor beats baselines by Z%..."
+**Domain Diversity**:
+- Finance, healthcare, marketing, census, fraud, manufacturing, sensor, biology
+- NOT many variants of same domain
 
-This is an empirical characterization paper. The evidence *is* the contribution.
+**Candidate Datasets** (curate from these):
+- Small: diabetes (768), credit-g (1K), phishing (11K)
+- Medium: churn (5-10K), mammography (11K), magic-gamma (19K)
+- Large: bank-marketing (41K), nomao (34K), electricity (45K), adult (48K)
+- Very Large: airlines (54K), jannis (84K), covertype-binary (500K, subsample to 100K)
+
+#### Step 2: Collect Complete Curves (with Rich Meta-Features)
+
+**For each dataset**:
+1. Test k ∈ [32, 64, 128, 256, 512, 1024, 2048, 4096, 8192, 16384, full]
+2. Record: AUC, fit_time, predict_time, memory
+3. Extract: k99 (min k achieving 99% of max AUC)
+4. Compute meta-features:
+   - Basic: n_samples, n_features, n_classes
+   - Distribution: numeric_ratio, categorical_ratio, missing_ratio
+   - Complexity: class_entropy, minority_class_ratio, feature_correlation, mean_mutual_information
+   - **New target metric: CEI** = n / k99 (context efficiency index)
+
+#### Step 3: Empirical Analysis
+
+**Question 1: Does saturation exist?**
+- Across all 30-50 curves, what % show clear saturation?
+- Where does saturation occur? (k=256? k=1024? dataset-dependent?)
+
+**Question 2: Can we predict k99?**
+- Train on 29 datasets, test on 1 (repeat 30 times, LOOCV)
+- Compare regressors: Linear, Ridge, RF, XGBoost, CatBoost
+- If linear wins → interpretable and good
+- Report: Pearson/Spearman correlation, RMSE, confidence intervals
+
+**Question 3: Is there a Context Efficiency Law?**
+- Compute CEI = n / k99 for all datasets
+- Does CEI vary widely? Is it predictable?
+- Can we predict CEI from meta-features? (e.g., CEI ∝ log(n)?)
+- **This is stronger than "optimal k varies"** — it asks if efficiency follows a law
+
+#### Step 4: Compare Against Heuristics
+
+**Baselines**:
+- Fixed k ∈ {256, 512, 1024}
+- k = √n
+- k = log₂(n)
+- k = 0.05n
+- k = 0.1n
+- Learned k99 (from meta-features)
+
+**Evaluation**: Mean AUC, % variance explained, statistical tests (Wilcoxon, Friedman)
+
+#### Step 5: Prototype Selection (Supporting Experiment)
+
+**At predicted k99**: Compare random vs K-Means vs FPS
+- Does selection method matter when k is optimized?
+- Measure: accuracy, runtime, memory
+
+### What NOT to Claim (Until Evidence Supports It)
+
+❌ "Saturation behavior discovered"  
+✅ "Saturation observed in X% of datasets; correlation with meta-features Y"
+
+❌ "Context size is predictable"  
+✅ "Linear model achieves R²=Z on LOOCV; statistical significance α=W"
+
+❌ "Optimal k varies by dataset"  
+✅ "Context Efficiency Index varies 3-10x across datasets; correlates with log(n)"
+
+### Evidence Threshold for Publication
+
+**Weak evidence** (current): 4 measurements → feasibility study only  
+**Strong evidence** (target): 30-50 datasets × 11 k values + LOOCV → empirical ML paper  
+**Gold standard** (ideal): 30-50 datasets + CEI law + statistical validation → strong venue
 
 ---
 
