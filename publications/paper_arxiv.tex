@@ -10,7 +10,7 @@
 \usepackage{geometry}
 \geometry{margin=0.8in}
 
-\title{Context Optimization for TabPFN: An Empirical Study of Prototype Context Size}
+\title{Context Size and Prototype Selection for TabPFN:\\ An Empirical Report}
 
 \author{
   Mohammed Abdullah\\
@@ -24,364 +24,366 @@
 \maketitle
 
 \begin{abstract}
-In-context learning foundation models like TabPFN require selecting prototype samples for inference. While recent work demonstrates the capacity to scale to massive datasets, a complementary question remains: how much context is actually necessary to achieve near-maximum accuracy? We present a systematic empirical study measuring accuracy-vs-context curves across 50+ diverse OpenML datasets. For each dataset, we measure accuracy at k ∈ [32, 64, 128, ..., 16384, full], recording runtime and memory alongside accuracy. We compute descriptive statistics (k95, k99, saturation points) and analyze their relationship to dataset properties. This empirical characterization provides the foundation for understanding context requirements in foundation models.
+TabPFN performs tabular classification by in-context learning over a set of
+training (prototype) samples. Two practical questions follow from this design:
+how many prototypes are needed, and how they should be chosen. This report
+collects a set of small-scale experiments that measure, on a handful of public
+OpenML datasets, (i) how full-context TabPFN accuracy changes as the training
+set grows, (ii) how accuracy changes with the prototype count $k$ on one
+held-out dataset, and (iii) how several prototype-selection strategies compare
+in accuracy and selection time. We report only what we measured. The
+measurements are limited in scale (most claims rest on two to six datasets, and
+runs were performed on CPU except where noted), so we describe the results as
+observations and intuitions rather than established findings. All numbers come
+directly from the logged experiment outputs.
 
-\textbf{Keywords:} in-context learning, context requirements, empirical study, foundation models, tabular learning
+\textbf{Keywords:} in-context learning, prototype selection, context size,
+tabular learning, empirical study
 \end{abstract}
 
 \section{Introduction}
 
-\subsection{Research Question}
+TabPFN classifies test rows by attending over a set of labeled training rows
+supplied as context. The number of context rows ($k$) and the way they are
+selected are the two knobs a practitioner controls at inference time. This
+report documents a series of small experiments probing those two knobs. It is
+an empirical log, not a theory paper: every number below is read directly from
+an experiment output file, and we avoid claims that go beyond the data we
+collected.
 
-TabPFN uses in-context learning: predicting test labels by attending over prototype samples from the training set. While recent work (TabPFN-3) demonstrates the capacity to handle million-row datasets, a fundamental question remains: **What is the empirical relationship between accuracy and context size?**
+We emphasize the limitations up front. The experiments cover at most six
+datasets; several rest on only one or two. Most runs were executed on CPU, so
+absolute timings are slow and are not comparable to GPU deployment. We did not
+repeat every configuration across many seeds. Accordingly, we present the
+results as observations and possible intuitions, and we flag where the evidence
+is thin.
 
-In other words:
+\section{Setup}
 
-\begin{itemize}
-\item Does accuracy improve monotonically with more prototypes, or does it saturate?
-\item If saturation exists, can it be characterized and predicted from dataset properties?
-\item What is the minimum context budget required to retain 95\% or 99\% of maximum accuracy?
-\item Does the method of prototype selection (random vs. clustering vs. learned methods) affect these tradeoffs?
-\end{itemize}
+We use TabPFN v3 with \texttt{ignore\_pretraining\_limits=True}. Datasets are
+public OpenML tasks. Unless stated otherwise, splits are stratified and the
+random seed is fixed. We report ROC AUC (one-vs-rest macro for multiclass).
+The device used for each experiment is stated in the corresponding table,
+because it differed between experiments and affects timing.
 
-These questions address \textbf{context scaling laws} and \textbf{context efficiency}: understanding how accuracy and cost scale with context size is orthogonal to demonstrating maximum capacity. A model may scale to 1M samples, but practitioners need to know the minimum k sufficient for their accuracy targets.
+\section{Observation 1: Full-Context Accuracy vs. Training-Set Size}
 
-\subsection{Contributions}
-
-\begin{enumerate}
-\item \textbf{Systematic data collection}: We measure complete accuracy-vs-context curves across 50+ curated OpenML datasets, recording AUC, runtime, and GPU memory for each context size.
-
-\item \textbf{Descriptive statistics}: For each dataset, we compute k95, k99, and characterize saturation behavior. We correlate these with dataset properties to understand what drives context requirements.
-
-\item \textbf{Reproducible benchmark}: All measurements use public datasets, fixed random seeds, and standard evaluation methodology. Results are reproducible and extensible.
-\end{enumerate}
-
-The empirical data is the primary contribution. Secondary analyses (prediction, saturation modeling, selection comparison) will be pursued depending on what the data reveals.
-
-\section{Background and Related Work}
-
-\subsection{TabPFN Architecture}
-
-TabPFN is a Transformer-based model trained via in-context learning: given dataset $(X_k, y_k)$ with $k$ prototypes, predict labels for test samples by attending over prototype patterns. The model uses two-way attention:
-
-\begin{itemize}
-\item \textbf{Column attention}: Feature interactions (O(m²) where m is feature count)
-\item \textbf{Row attention}: Sample interactions (O(n²) where n is sample count)
-\end{itemize}
-
-For typical datasets ($m \le 100$), row attention dominates complexity. With $n=40,000$, O(n²) attention seems prohibitive, yet modern GPUs handle large matrix operations efficiently.
-
-\subsection{Meta-Learning for Hyperparameter Selection}
-
-Meta-learning learns to select hyperparameters from dataset characteristics. AutoML systems like Auto-WEKA and Auto-sklearn use meta-learners for algorithm selection. Our approach is simpler: predict a single parameter (k) via linear regression on 7 meta-features.
-
-\subsection{Prototype Selection in ML}
-
-Prototype selection is well-studied in instance-based learning. K-Means, FPS, and learned methods are standard. We show that random sampling suffices for foundation models, simplifying pipelines.
-
-\section{Experiments and Results}
-
-\subsection{Experiment 1: Complete Accuracy Curves (Exp13 Phase A+B)}
-
-\textbf{Research Question}: Does accuracy saturate with prototype count? If so, can we predict the minimum k achieving 99\% of maximum accuracy from dataset properties?
-
-\textbf{Setup}: For each of 30+ OpenML datasets:
-\begin{itemize}
-\item Measure accuracy at k ∈ {32, 64, 128, 256, 512, 1024, 2048, 4096, 8192, 16384, full}
-\item Extract k99: minimum k where AUC(k) ≥ 0.99 × AUC(full)
-\item Compute dataset meta-features: log(n), log(m), n\_classes, class\_density, n/m ratio, sparsity
-\end{itemize}
-
-\textbf{Datasets}: 30+ public OpenML datasets spanning:
-\begin{itemize}
-\item Binary and multiclass classification
-\item Small (100-1K rows), medium (1K-100K), large (100K+)
-\item Varying feature counts (2-100+)
-\item Varying class imbalance (balanced to 99-1)
-\end{itemize}
+We measured full-context TabPFN, a fixed-$k{=}512$ prototype variant, and a
+tuned LightGBM baseline as the training set grows, on two datasets
+(bank-marketing, adult), single seed, on CPU.
 
 \begin{table}[h]
 \centering
-\caption{Extended Scaling Study: Accuracy Saturation}
+\caption{Accuracy (ROC AUC) and wall-clock time vs.\ training size, CPU,
+seed 42. ``full'' = all training rows; ``proto'' = fixed $k{=}512$ random
+prototypes.}
 \label{tab:scaling}
-\begin{tabular}{lrrrr}
+\begin{tabular}{lrrrrr}
 \toprule
-Dataset & n\_rows & AUC & GPU Mem & Status \\
+Dataset & $n$ & full AUC & proto AUC & LightGBM AUC & full time (s) \\
 \midrule
-\multicolumn{5}{c}{\textbf{Bank-Marketing (Scaling Study)}} \\
-bank-mkt & 1,000 & 0.9159 & 1.2 GB & OK \\
-bank-mkt & 5,000 & 0.9377 & 2.1 GB & OK \\
-bank-mkt & 10,000 & 0.9439 & 3.8 GB & OK \\
-bank-mkt & 20,000 & 0.9439 & 5.2 GB & OK \\
-bank-mkt & 40,000 & 0.9465 & 7.3 GB & OK \\
-bank-mkt & 50,000 & 0.9468 & 8.8 GB & OK \\
-bank-mkt & 75,000 & OOM & — & Memory limit \\
+bank-mkt & 1{,}000  & 0.9159 & 0.9098 & 0.8743 & 24.1 \\
+bank-mkt & 2{,}000  & 0.9299 & 0.8879 & 0.8933 & 35.0 \\
+bank-mkt & 5{,}000  & 0.9377 & 0.8856 & 0.9115 & 61.2 \\
+bank-mkt & 10{,}000 & 0.9439 & 0.9048 & 0.9252 & 221.2 \\
+bank-mkt & 20{,}000 & 0.9439 & 0.8958 & 0.9326 & 808.9 \\
+bank-mkt & 40{,}689 & 0.9465 & 0.9023 & 0.9383 & 2516.5 \\
 \midrule
-\multicolumn{5}{c}{\textbf{Cross-Dataset Validation}} \\
-electricity & 40,780 & 0.9381 & 7.5 GB & OK \\
-adult & 43,957 & 0.9174 & 7.8 GB & OK \\
-credit-g & 1,000 & 0.8690 & 1.1 GB & OK \\
+adult & 1{,}000  & 0.8952 & 0.8955 & 0.8843 & 43.9 \\
+adult & 5{,}000  & 0.9099 & 0.8943 & 0.9121 & 133.4 \\
+adult & 10{,}000 & 0.9115 & 0.8883 & 0.9196 & 399.3 \\
+adult & 20{,}000 & 0.9146 & 0.9009 & 0.9244 & 1303.1 \\
+adult & 43{,}957 & 0.9174 & 0.8932 & 0.9277 & 3036.8 \\
 \bottomrule
 \end{tabular}
 \end{table}
 
-\textbf{Key Findings}:
+\textbf{What we observe.}
+\begin{itemize}
+\item On both datasets, full-context AUC rises with $n$ and the gains shrink as
+$n$ grows. On bank-marketing, AUC moves from 0.9159 at $n{=}1{,}000$ to 0.9439
+at $n{=}10{,}000$, then to 0.9465 at $n{=}40{,}689$: most of the improvement
+occurs by $n{\approx}10{,}000$. We describe this as diminishing returns, not as
+a proven saturation law.
+\item Full-context wall-clock time grew steeply on CPU (from tens of seconds to
+$\sim$2{,}500--3{,}000 s at the largest sizes). LightGBM ran in under 5 seconds
+throughout and reached competitive AUC (on adult it exceeded full TabPFN at
+$n\geq5{,}000$ in these runs).
+\item The fixed-$k{=}512$ prototype variant did not track full-context accuracy
+as $n$ grew; it stayed near 0.89--0.90. This is consistent with the idea that a
+fixed small context is not enough for the larger datasets here.
+\end{itemize}
 
-(1) \textbf{Saturation point}: Accuracy plateaus around 10K-20K samples (0.944 AUC). Gains from 1K to 10K are substantial (+2.8\%), but 10K to 50K yield only +0.29\% additional improvement. Full TabPFN reaches practical limit on RTX 4060 at 50K rows (8.8 GB), with OOM at 75K.
+These runs were CPU-only, so the timings reflect CPU cost and should not be
+read as GPU deployment numbers.
 
-(2) \textbf{GPU memory scaling}: Observed memory usage (1.2 GB at 1K, 7.3 GB at 40K, 8.8 GB at 50K) increases with dataset size. At 50K rows, GPU utilization reaches 95\% of RTX 4060 capacity, leaving no margin for larger batches.
+\begin{figure}[h]
+\centering
+\includegraphics[width=\textwidth]{paper_figures/fig1_scaling.pdf}
+\caption{Full-context AUC vs.\ training size on bank-marketing and adult (CPU,
+seed 42). Gains diminish as $n$ grows; LightGBM is competitive and much faster.}
+\label{fig:scaling}
+\end{figure}
 
-(3) \textbf{Cross-dataset robustness}: Saturation pattern holds across electricity (40K) and adult (43K) datasets, suggesting the saturation is fundamental to TabPFN's architecture, not dataset-specific.
+\section{Observation 2: Accuracy vs.\ Prototype Count $k$}
 
-\subsection{Experiment 2: Learned k via Meta-Learning (Exp6 Adaptive k)}
-
-\textbf{Hypothesis}: Predicting optimal k from dataset features yields accuracy gains.
-
-\textbf{Method}:
-1. Grid search optimal k ∈ {64, 128, 256, 512, 1024, 2048} on 5 training datasets
-2. Extract 7 meta-features: log(n), log(m), n_classes, class_density, sparsity, n/m ratio, n_test
-3. Train linear regressor: Meta-features → Optimal k
-4. Predict k on held-out electricity dataset (40K rows), not seen during training
+On the electricity dataset (held out from the meta-model in Observation~3), we
+swept $k$ with random prototype selection.
 
 \begin{table}[h]
 \centering
-\caption{Optimal k Prediction (Meta-Learner)}
+\caption{ROC AUC vs.\ prototype count $k$ on electricity ($n_{\text{train}}
+=40{,}780$), random selection.}
+\label{tab:ksweep}
+\begin{tabular}{lr}
+\toprule
+$k$ & ROC AUC \\
+\midrule
+256  & 0.8483 \\
+512  & 0.8606 \\
+1024 & 0.8887 \\
+2048 & 0.9181 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{figure}[h]
+\centering
+\includegraphics[width=0.7\textwidth]{paper_figures/fig2_k_sweep.pdf}
+\caption{ROC AUC vs.\ prototype count $k$ on electricity. Accuracy keeps rising
+through $k{=}2048$; no plateau is seen in the tested range.}
+\label{fig:ksweep}
+\end{figure}
+
+\textbf{What we observe.} On this one dataset, AUC increased with $k$ across the
+range tested; we did not observe a plateau within $k\leq2048$. So for a large
+dataset like electricity, a small fixed $k$ (e.g.\ 512) left accuracy on the
+table relative to $k{=}2048$ (0.8606 vs.\ 0.9181, a difference of about
+$+6.7\%$). This is a single-dataset observation.
+
+\subsection{A dataset-dependent $k$}
+
+We fit a small linear meta-model mapping dataset meta-features
+($\log n$, $\log m$, number of classes, class density, $n/m$ ratio, sparsity,
+test size) to a per-dataset ``optimal'' $k$ chosen by validation AUC on five
+training datasets, then applied it to electricity as a held-out test.
+
+\begin{table}[h]
+\centering
+\caption{Per-dataset validation-optimal $k$ (five training datasets) and the
+held-out test.}
 \label{tab:adaptive}
-\begin{tabular}{lrrr}
-\toprule
-Dataset & n\_rows & Optimal k (grid search) & Learned k Accuracy \\
-\midrule
-diabetes & 691 & 64 & +0 (exact) \\
-bank-marketing & 40,711 & 2048 & +0 (exact) \\
-electricity (test) & 40,780 & 2048 & +0 (exact) \\
-\bottomrule
-\end{tabular}
-\end{table}
-
-\begin{table}[h]
-\centering
-\caption{Test AUC on Electricity (40K rows)}
-\label{tab:test_auc}
 \begin{tabular}{lrr}
 \toprule
-Method & k & AUC \\
+Dataset & role & optimal $k$ (val.) \\
 \midrule
-Fixed k=512 & 512 & 0.8606 \\
-Learned adaptive k & 2048 & \textbf{0.9181} \\
-Improvement & -- & \textbf{+6.7\%} \\
+diabetes       & train & 64 \\
+vehicle        & train & 1024 \\
+credit-g       & train & 512 \\
+bank-marketing & train & 2048 \\
+adult          & train & 2048 \\
+\midrule
+electricity    & test  & 2048 (predicted) \\
 \bottomrule
 \end{tabular}
 \end{table}
 
-\textbf{Key Finding}: Context size is dataset-dependent. Small datasets (n < 1K) saturate at k=64; large datasets (n > 20K) benefit from k=2048. A linear meta-model trained on 5 datasets demonstrates feasibility of predicting optimal k from dataset properties: log(n) is the dominant feature (coefficient +486), explaining dataset-size dependence. On held-out test data (electricity, 40K rows), this learned model outperforms fixed k=512 by +6.7% AUC. To validate the generality of this approach, we tested three alternative meta-learners (Random Forest, XGBoost, polynomial regression) and found that the linear model's simplicity and interpretability matched or exceeded more complex approaches (results in appendix). This demonstrates that context sizing benefits from dataset-aware tuning, similar to other model hyperparameters.
+On electricity, using the predicted $k{=}2048$ rather than a fixed $k{=}512$
+raised AUC from 0.8606 to 0.9181 ($+6.7\%$) in this single held-out test. The
+pattern in the training data---small datasets favor small $k$, large datasets
+favor larger $k$---is intuitive but rests on only five training points and one
+test point, so we treat ``$k$ can be predicted from dataset properties'' as a
+hypothesis supported by a single successful held-out case, not as a validated
+result.
 
-\subsection{Experiment 3: Selection Method Comparison (Exp2, Exp8)}
+\section{Observation 3: Prototype Selection Method}
 
-\textbf{Hypothesis}: Random sampling is competitive with sophisticated methods.
-
-\textbf{Setup}: Compare 5 selection methods (random, K-Means, FPS, importance, fixed) at k=2048.
+We compared prototype-selection strategies at a fixed $k$. Two datasets
+(diabetes, vehicle) were tested across random, K-Means, farthest-point sampling
+(FPS), and class-balanced K-Means at $k{=}512$ (three seeds, CPU). We also ran
+random vs.\ K-Means at $k{=}2048$ on electricity.
 
 \begin{table}[h]
 \centering
-\caption{Selection Methods: Accuracy and Speed}
+\caption{Selection method comparison. AUC values are means over three seeds
+(diabetes, vehicle) or single runs (electricity). Selection time is the time to
+choose the prototypes, separate from inference.}
 \label{tab:selection}
+\begin{tabular}{llrr}
+\toprule
+Dataset & Method & ROC AUC & selection time (s) \\
+\midrule
+diabetes ($k{=}512$) & random          & 0.9081 & $\sim$0.0002 \\
+diabetes ($k{=}512$) & FPS             & 0.9143 & $\sim$0.01 \\
+diabetes ($k{=}512$) & K-Means         & 0.9165 & $\sim$0.15--3.1 \\
+diabetes ($k{=}512$) & K-Means (bal.)  & 0.9116 & $\sim$0.18 \\
+\midrule
+vehicle ($k{=}512$)  & random          & 0.9740 & $\sim$0.0002 \\
+vehicle ($k{=}512$)  & FPS             & 0.9781 & $\sim$0.02 \\
+vehicle ($k{=}512$)  & K-Means         & 0.9762 & $\sim$0.25 \\
+vehicle ($k{=}512$)  & K-Means (bal.)  & 0.9778 & $\sim$0.25 \\
+\midrule
+electricity ($k{=}2048$) & random      & 0.9181 & $\sim$0.0002 \\
+electricity ($k{=}2048$) & K-Means      & 0.9078 & --- \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\textbf{What we observe.}
+\begin{itemize}
+\item Across these datasets, the accuracy differences between random, K-Means,
+FPS, and balanced K-Means were small (within roughly one AUC point). On diabetes
+and vehicle, K-Means and FPS were marginally ahead; on electricity at
+$k{=}2048$, random was marginally ahead. We do not read these small differences
+as a consistent ranking.
+\item Random selection was much cheaper to compute: its selection time was on
+the order of $10^{-4}$ s, versus roughly $0.15$--$3$ s for K-Means---about three
+orders of magnitude faster in these runs. Because it costs almost nothing and
+matched the other methods on accuracy here, random is a reasonable default.
+\end{itemize}
+
+\subsection{Selection strategies that hurt}
+
+Two ``informed'' strategies performed clearly worse than random at $k{=}512$:
+
+\begin{table}[h]
+\centering
+\caption{Informed selection vs.\ random at $k{=}512$. Negative change means the
+method underperformed random.}
+\label{tab:badselect}
+\begin{tabular}{llrr}
+\toprule
+Dataset & Method & AUC (method) & AUC (random) \\
+\midrule
+electricity    & entropy (uncertainty)    & 0.6348 & 0.8606 \\
+bank-marketing & entropy (uncertainty)    & 0.6726 & 0.9023 \\
+electricity    & feature-variance (imp.)  & 0.7295 & 0.8606 \\
+bank-marketing & feature-variance (imp.)  & 0.8749 & 0.9023 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Selecting high-uncertainty (entropy) prototypes dropped AUC sharply
+($-26\%$ and $-25\%$ on the two datasets), and feature-variance selection also
+hurt ($-15\%$ and $-3\%$). A plausible intuition is that these strategies pick
+non-representative subsets, and TabPFN's in-context learning appears to prefer a
+context that resembles the overall training distribution. We did not directly
+measure distribution similarity, so this remains an intuition.
+
+\begin{figure}[h]
+\centering
+\includegraphics[width=\textwidth]{paper_figures/fig3_selection.pdf}
+\caption{Selection methods at $k{=}512$. Accuracy differences are small (left);
+random selection is about three orders of magnitude cheaper to compute (right).}
+\label{fig:selection}
+\end{figure}
+
+\section{Observation 4: Splitting the Context Across Heads}
+
+We tested splitting a fixed budget of $k_{\text{total}}{=}1024$ prototypes
+across $1, 2, 4, 8$ independent ``heads'' and averaging predictions, on
+electricity and bank-marketing.
+
+\begin{table}[h]
+\centering
+\caption{Mean ROC AUC as the fixed budget $k_{\text{total}}{=}1024$ is split
+across heads.}
+\label{tab:multihead}
 \begin{tabular}{lrrrr}
 \toprule
-Method & AUC (Electricity) & AUC (Bank) & Time (sec) & Speedup \\
+Dataset & 1 head & 2 heads & 4 heads & 8 heads \\
 \midrule
-Fixed k=512 & 0.8606 & 0.8579 & 0.00 & baseline \\
-Importance & 0.8924 & 0.9008 & 5.67 & 1x \\
-FPS & 0.9056 & 0.9134 & 89.34 & 1x \\
-K-Means & 0.9078 & 0.9187 & 12.45 & 1x \\
-Random & \textbf{0.9181} & \textbf{0.9198} & 0.02 & \textbf{623x faster} \\
+electricity    & 0.8887 & 0.8661 & 0.8530 & 0.8320 \\
+bank-marketing & 0.9193 & 0.8982 & 0.8664 & 0.8439 \\
 \bottomrule
 \end{tabular}
 \end{table}
 
-\textbf{Key Finding}: Among the evaluated selection methods, random sampling consistently matched or exceeded more sophisticated strategies. At k=2048, random sampling achieved 0.9181 AUC on electricity and 0.9198 AUC on bank-marketing, while K-Means achieved 0.9078 and 0.9187 respectively (differences within noise on most datasets). Random sampling is practical because it is 623\times faster (0.02 sec vs 12.45 sec for K-Means) with equivalent accuracy. We note that uncertainty-weighted and importance-weighted sampling failed catastrophically (15-26\% lower AUC), suggesting that selecting non-representative samples harms in-context learning. This evidence supports a hypothesis: in-context learning may require samples representative of the full distribution, not samples that maximize feature-space coverage.
-
-\section{Analysis}
-
-\subsection{Why Does Accuracy Saturate?}
-
-The saturation at 10K-20K samples suggests three possible mechanisms:
-
-\begin{enumerate}
-\item \textbf{Information-theoretic saturation}: For typical tabular datasets, 10K-20K samples may be sufficient to learn most decision boundaries. Additional samples provide redundant information.
-
-\item \textbf{Attention bottleneck}: TabPFN's attention mechanism may focus on a core subset of patterns, rendering additional context invisible.
-
-\item \textbf{Pretraining prior saturation}: The synthetic prior learned during pretraining may encode sufficient inductive bias that large training sets add little value.
-\end{enumerate}
-
-These hypotheses are not validated in this work; saturation is observed empirically but not explained. Future work should investigate the mechanism.
-
-\subsection{Why Do Simple Methods Match Sophisticated Ones?}
-
-We observe that random, K-Means, and FPS sampling achieve similar accuracy when k is fixed. We hypothesize that in-context learning requires representative sampling—seeing the true distribution of training data—rather than maximizing feature-space coverage. This hypothesis is supported by the catastrophic failures of non-representative methods: uncertainty-weighted sampling and importance-weighted sampling achieved 15-26\% lower AUC (Section 3, experiments 10-11). These failures suggest that selecting hard examples or high-variance samples actively harms in-context learning, consistent with a distribution-preservation hypothesis.
-
-However, this hypothesis is not directly validated in this work. A stronger test would directly measure how well each selection method preserves the empirical distribution (e.g., via KL divergence of marginal distributions). This remains future work.
-
-\subsection{Why Does Context Size Vary by Dataset?}
-
-The learned relationship log(n) → k suggests that larger datasets naturally require more context. Possible explanations:
-
-\begin{enumerate}
-\item Larger datasets have more diverse patterns; more prototypes are needed to represent them.
-\item Smaller datasets are simpler; their patterns are learnable from fewer examples.
-\item The relationship is coincidental: n and optimal k may both depend on some unmeasured property (class imbalance, feature dimensionality).
-\end{enumerate}
-
-Our meta-learner achieves R² = 0.87, explaining most variance in optimal k, but the mechanism is not identified.
-
-\section{Context Efficiency and Practical Optimization}
-
-A practitioner's question: "Do I need k=2048 prototypes, or can I use fewer?" To answer this, we assess context efficiency: the accuracy achieved with minimal prototypes.
-
-On the electricity dataset, we observe that k=512 achieves 0.8606 AUC (95\% of k=2048's 0.9181 AUC), while k=1024 achieves 0.9042 AUC (98.5\% of maximum). This suggests a practical trade-off: **use the smallest k that achieves 99\% of maximum accuracy**. On electricity, this corresponds to k≈1500, yielding 0.909 AUC with 45\% fewer prototypes than optimal.
-
-\begin{table}[h]
+\begin{figure}[h]
 \centering
-\caption{Context Efficiency: AUC vs Prototype Count (Electricity Dataset)}
-\label{tab:efficiency}
-\begin{tabular}{lrrr}
-\toprule
-k & AUC & \% of Max & Speed Gain \\
-\midrule
-512 & 0.8606 & 93.7\% & 30x \\
-1024 & 0.9042 & 98.5\% & 15x \\
-1500 & \textasciitilde 0.909 & 99.0\% & 9x \\
-2048 & 0.9181 & 100\% & 1x \\
-\bottomrule
-\end{tabular}
-\end{table}
+\includegraphics[width=0.7\textwidth]{paper_figures/fig4_multihead.pdf}
+\caption{Mean AUC as a fixed budget $k_{\text{total}}{=}1024$ is split across
+more heads. Accuracy falls monotonically on both datasets.}
+\label{fig:multihead}
+\end{figure}
 
-For practitioners, this suggests: **estimate optimal k from dataset properties, then reduce by 25-30\% for deployment** to balance accuracy and inference cost.
+\textbf{What we observe.} On both datasets, splitting the budget monotonically
+reduced accuracy: one head with all 1024 prototypes did best. This suggests that
+a single larger context is preferable to several smaller ones at fixed total
+budget, at least in these two cases.
 
-\begin{table}[h]
-\centering
-\caption{Recommended Configurations by Deployment Constraint}
-\label{tab:deployment}
-\begin{tabular}{lll}
-\toprule
-Constraint & Method & Expected Performance \\
-\midrule
-Accuracy-critical & Full TabPFN, learned k & 99\%+ of max AUC \\
-Balanced & Prototypes (random), 75\% of optimal k & 99\% of max AUC, 30\% speedup \\
-Latency-critical & Prototypes (random), 50\% of optimal k & 95-98\% of max AUC, 60\% speedup \\
-Extreme latency & Fixed k=512, fast mode & 93-95\% of max AUC, 74x speedup \\
-\bottomrule
-\end{tabular}
-\end{table}
+\section{Observation 5: Behavior Under Input Shift}
 
-\subsection{Simple k Heuristic (No Meta-Learning Required)}
+We applied synthetic feature-scale and additive-noise shifts to the test inputs
+and measured the AUC drop relative to the unshifted baseline, for full-context
+and fixed-$k{=}512$ prototype TabPFN, on four datasets.
 
-If training a linear meta-learner is infeasible, the following rule-of-thumb provides practical guidance:
-
-\begin{equation}
-k_{\text{recommended}} = \begin{cases}
-64 & \text{if } n < 1,000 \\
-512 & \text{if } 1,000 \le n < 5,000 \\
-1,024 & \text{if } 5,000 \le n < 20,000 \\
-2,048 & \text{if } n \ge 20,000
-\end{cases}
-\end{equation}
-
-This heuristic requires zero computation and achieves approximately 95\% of learned k performance. For practitioners with computational budget, training a linear meta-learner adds 6.7\% accuracy at negligible overhead.
+\textbf{What we observe.} Scale shifts degraded accuracy much more than noise
+shifts. For example, a $5\times$ feature-scale shift reduced AUC substantially
+on diabetes (about $-53\%$ full, $-61\%$ proto) and vehicle
+($\approx-47\%$ both), while additive noise caused smaller drops. On
+bank-marketing the full model degraded more than the proto model under the
+$5\times$ scale shift ($-26\%$ vs.\ $-7\%$); we do not have enough datasets to
+say whether this ordering is general. These are stress tests with artificial
+shifts and should be read as such.
 
 \section{Limitations}
 
+\begin{itemize}
+\item \textbf{Scale.} At most six datasets are used; several observations rest
+on one or two. Differences of about one AUC point are within the noise we would
+expect at this scale.
+\item \textbf{Device.} Most runs were CPU-only (the scaling and selection
+timing experiments). Timings are therefore CPU costs and are not representative
+of GPU inference.
+\item \textbf{Seeds.} Seed coverage varies by experiment (one to five seeds);
+not every configuration was repeated.
+\item \textbf{No mechanism.} Where we note intuitions (why $k$ scales with $n$,
+why representative selection helps), we did not test the mechanism directly.
+\item \textbf{Meta-model.} The $k$-prediction meta-model was fit on five
+datasets and validated on one; this is a feasibility check, not a validated
+predictor.
+\end{itemize}
+
+\section{Summary}
+
+From these small experiments we take the following intuitions, stated at the
+strength the data supports:
+
 \begin{enumerate}
-\item Single GPU type (RTX 4060); results vary on A100/H100.
-\item Limited domain diversity (finance, demographics, medical); generalization to NLP-tabular or images unclear.
-\item No latency measurement; full TabPFN may be slower at 40K despite higher accuracy.
-\item 11 experiments on 6 datasets; 100+ datasets would strengthen claims.
-\item No online adaptation; retraining required if distribution shifts.
+\item Full-context TabPFN accuracy improves with training size but with
+diminishing returns; most of the gain on our two scaling datasets arrived by
+$\sim$10{,}000 rows.
+\item The useful prototype count $k$ appears dataset-dependent: on a large
+dataset (electricity), raising $k$ from 512 to 2048 helped noticeably; on small
+datasets a small $k$ sufficed.
+\item Among the selection methods tested, accuracy differences were small,
+while random selection was far cheaper---so random is a sensible default.
+Uncertainty- and variance-based selection performed markedly worse.
+\item At a fixed budget, one large context beat several smaller ones.
 \end{enumerate}
 
-\section{Conclusion}
+These are observations from a limited set of runs. Confirming them would require
+more datasets, GPU timing, and repeated seeds.
 
-The optimal context size for TabPFN is dataset-dependent and predictable from dataset meta-features. Our empirical findings:
+\section*{Reproducibility}
 
-\begin{enumerate}
-\item \textbf{Accuracy saturates at 10K-20K samples}, suggesting context sufficiency. This is not a scalability breakthrough but rather a characterization of diminishing returns.
+All results are read directly from logged experiment outputs
+(\texttt{experiments/results/*.json}). Datasets are public OpenML tasks; seeds
+and devices are recorded per experiment.
 
-\item \textbf{Context size can be estimated from 7 meta-features} using a simple linear model. Large datasets benefit from k=2048; small datasets saturate at k=64. This enables automatic context optimization without manual tuning.
-
-\item \textbf{Selection method does not affect accuracy.} Random sampling is optimal because it preserves distribution statistics, not because it discovers diverse samples.
-\end{enumerate}
-
-Practical implication: practitioners can deploy a two-stage system: (1) given a new dataset, predict optimal k from meta-features; (2) retrieve k random samples and run TabPFN. This approach maintains 95\% of full-model accuracy while reducing inference cost by 74\%.
-
-Open questions remain: Why does accuracy saturate? What role does the pretraining prior play? How do these findings generalize to other foundation model architectures? Future work should investigate these mechanisms.
-
-\section*{Acknowledgments}
-
-We thank the TabPFN authors for releasing the model and the OpenML community for maintaining public datasets. All experiments are reproducible: code available at https://github.com/user/tabpfn-scaling.
-
-\begin{thebibliography}{99}
+\begin{thebibliography}{9}
 
 \bibitem{hollmann2024tabpfn}
-Hollmann, N., Mueller, S., Eggensperger, K., \& Hutter, F. (2024).
-TabPFN: A Transformer That Learns Tabular Data.
+Hollmann, N., Müller, S., Eggensperger, K., \& Hutter, F. (2024).
+Accurate predictions on small data with a tabular foundation model.
 \textit{Nature}.
-
-\bibitem{vanschoren2019meta}
-Vanschoren, J., van Rijn, J. N., Bischl, B., \& Torgo, L. (2019).
-Open Problems in Meta-Learning.
-\textit{arXiv preprint arXiv:1810.03548}.
 
 \bibitem{arthur2007kmeans}
 Arthur, D., \& Vassilvitskii, S. (2007).
-k-means++: The Advantages of Careful Seeding.
-In \textit{Proceedings of the 18th Annual ACM-SIAM Symposium on Discrete Algorithms}.
+k-means++: The advantages of careful seeding.
+\textit{Proc.\ ACM-SIAM SODA}.
 
 \end{thebibliography}
-
-\appendix
-
-\section*{Appendix A: Experimental Details}
-
-\subsection*{Datasets}
-
-\begin{enumerate}
-\item diabetes (691 rows, 8 features, 2 classes)
-\item vehicle (761 rows, 18 features, 4 classes)
-\item credit-g (1000 rows, 20 features, 2 classes)
-\item bank-marketing (40,711 rows, 16 features, 2 classes)
-\item adult (30,000 rows, 14 features, 2 classes)
-\item electricity (40,780 rows, 8 features, 2 classes)
-\end{enumerate}
-
-\subsection*{Meta-Features}
-
-\begin{enumerate}
-\item $\log(n)$: Dataset size on log scale
-\item $\log(m)$: Feature count on log scale
-\item $n_{\text{classes}}$: Number of distinct labels
-\item $\text{class\_density}$: Classes per sample (n_classes / n_rows)
-\item $n/m$: Sample-to-feature ratio
-\item sparsity: Fraction of missing values
-\item $n_{\text{test}}$: Test set size
-\end{enumerate}
-
-\subsection*{Hyperparameters}
-
-\begin{itemize}
-\item TabPFN: v3 (gated), ignore\_pretraining\_limits=True
-\item Train/test split: 80/20, stratified
-\item Random seed: 42 (reproducibility)
-\item K-Means: scikit-learn default (k-means++ init, max\_iter=300)
-\item Linear regressor: scikit-learn, StandardScaler normalization
-\end{itemize}
-
-\subsection*{Computational Environment}
-
-\begin{itemize}
-\item GPU: RTX 4060 8GB (consumer-grade, 2022 release)
-\item CPU: Intel i5-12400
-\item RAM: 32GB
-\item Python 3.10, PyTorch 2.0, scikit-learn 1.3
-\end{itemize}
 
 \end{document}
