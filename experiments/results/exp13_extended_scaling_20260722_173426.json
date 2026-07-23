@@ -18,5 +18,75 @@
     "elapsed_sec": 5.30013370513916,
     "gpu_memory_gb": null,
     "status": "OK"
+  },
+  {
+    "dataset": "bank-marketing",
+    "n_rows": 900,
+    "n_features": 16,
+    "n_classes": 2,
+    "auc": 0.9151193633952255,
+    "elapsed_sec": 5.22272253036499,
+    "gpu_memory_gb": null,
+    "status": "OK"
+  },
+  {
+    "dataset": "bank-marketing",
+    "n_rows": 4500,
+    "n_features": 16,
+    "n_classes": 2,
+    "auc": 0.9247857335024405,
+    "elapsed_sec": 45.53087759017944,
+    "gpu_memory_gb": null,
+    "status": "OK"
+  },
+  {
+    "dataset": "bank-marketing",
+    "n_rows": 9000,
+    "n_features": 16,
+    "n_classes": 2,
+    "auc": 0.9454583063022405,
+    "elapsed_sec": 118.79162907600403,
+    "gpu_memory_gb": null,
+    "status": "OK"
+  },
+  {
+    "dataset": "bank-marketing",
+    "n_rows": 18000,
+    "n_features": 16,
+    "n_classes": 2,
+    "auc": 0.9438080165713235,
+    "elapsed_sec": 1048.8990051746368,
+    "gpu_memory_gb": null,
+    "status": "OK"
+  },
+  {
+    "dataset": "bank-marketing",
+    "n_rows": 27000,
+    "n_features": 16,
+    "n_classes": 2,
+    "auc": 0.9451426521644439,
+    "elapsed_sec": 54945.1722984314,
+    "gpu_memory_gb": null,
+    "status": "OK"
+  },
+  {
+    "dataset": "bank-marketing",
+    "n_rows": 36000,
+    "n_features": 16,
+    "n_classes": 2,
+    "auc": 0.9442652014837815,
+    "elapsed_sec": 3326.2536523342133,
+    "gpu_memory_gb": null,
+    "status": "OK"
+  },
+  {
+    "dataset": "bank-marketing",
+    "n_rows": 40689,
+    "n_features": 16,
+    "n_classes": 2,
+    "auc": 0.9396306485309595,
+    "elapsed_sec": 5397.473606348038,
+    "gpu_memory_gb": null,
+    "status": "OK"
   }
 ]

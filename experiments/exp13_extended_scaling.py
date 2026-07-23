@@ -48,7 +48,6 @@ DATASETS = [
 
     # Large (extended) - optional but recommended
     (310, "forest-type", 581012),      # Covertype: 581K rows
-    # (344, "higgs-small", 11000000),  # Higgs: 11M rows (requires more RAM)
 ]
 
 # Subsample sizes for phase A (scaling study)
@@ -256,15 +255,25 @@ def phase_a_complete_curves():
 
         # Add k99 summary to results
         if k99_value is not None and max_auc is not None:
+            if isinstance(k99_value, int):
+                cei = n_samples / k99_value
+            else:
+                cei = None
+
             summary = {
                 "dataset": name,
                 "n_samples": n_samples,
                 "k99": k99_value,
                 "max_auc": max_auc,
-                "context_efficiency_index": n_samples / k99_value if isinstance(k99_value, int) else None,
+                "context_efficiency_index": cei,
             }
             summary.update(meta_features)
-            print(f"Summary: k99={k99_value}, CEI={n_samples / k99_value if isinstance(k99_value, int) else 'unknown':.1f}")
+
+            if cei is not None:
+                print(f"Summary: k99={k99_value}, CEI={cei:.1f}")
+            else:
+                print(f"Summary: k99={k99_value}")
+
             curve_results.append(summary)
 
         results.extend(curve_results)
