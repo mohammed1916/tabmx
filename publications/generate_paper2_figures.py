@@ -23,8 +23,9 @@ fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(13, 5))
 for ds, c in zip(datasets, colors):
     ks = sorted(int(k) for k in H1[ds].keys())
     mean = [H1[ds][str(k)]["mean"] for k in ks]
+    ci = [H1[ds][str(k)].get("ci95", 0.0) for k in ks]
     cv = [100 * H1[ds][str(k)]["cv"] for k in ks]
-    ax1.plot(ks, mean, 'o-', color=c, label=ds)
+    ax1.errorbar(ks, mean, yerr=ci, fmt='o-', color=c, label=ds, capsize=3, elinewidth=1)
     ax2.plot(ks, cv, 'o-', color=c, label=ds)
 ax1.set_xscale('log', base=2); ax2.set_xscale('log', base=2)
 ax1.set_xticks(K); ax1.set_xticklabels(K); ax2.set_xticks(K); ax2.set_xticklabels(K)
@@ -79,7 +80,9 @@ fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(13, 5))
 x = np.arange(len(ds3)); w = 0.26
 for i, m in enumerate(methods):
     aucs = [H3[d][m]["mean_auc"] for d in ds3]
-    ax1.bar(x + (i - 1) * w, aucs, w, label=m, color=mcolors[m])
+    cis = [H3[d][m].get("ci95", 0.0) for d in ds3]
+    ax1.bar(x + (i - 1) * w, aucs, w, label=m, color=mcolors[m],
+            yerr=cis, capsize=2, error_kw={"elinewidth": 1})
 ax1.set_xticks(x); ax1.set_xticklabels(ds3, rotation=30, ha='right', fontsize=8)
 ax1.set_ylabel('mean ROC AUC', fontweight='bold'); ax1.set_ylim([0.6, 1.0])
 ax1.set_title('Accuracy: methods nearly tied', fontweight='bold')

@@ -81,10 +81,11 @@ def main():
             aucs = np.array([r["auc"] for r in rows("stability_repr", dataset=ds, k=k)])
             if len(aucs) == 0:
                 continue
-            m, s = float(aucs.mean()), float(aucs.std())
+            m, s = float(aucs.mean()), float(aucs.std(ddof=1)) if len(aucs) > 1 else 0.0
             cv = float(s / m) if m else float("nan")
+            ci = float(1.96 * s / np.sqrt(len(aucs))) if len(aucs) > 1 else 0.0
             h1[ds][k] = {"n": len(aucs), "mean": m, "std": s, "cv": cv,
-                         "min": float(aucs.min()), "max": float(aucs.max())}
+                         "ci95": ci, "min": float(aucs.min()), "max": float(aucs.max())}
         if h1[ds]:
             print(f"\n{ds}")
             print(f"  {'k':>5} {'mean':>8} {'std':>8} {'CV%':>7} {'range':>16}")
@@ -182,8 +183,9 @@ def main():
             rs = rows("selection", dataset=ds, method=m)
             au = np.array([r["auc"] for r in rs])
             ts = np.array([r.get("select_sec", np.nan) for r in rs])
-            h3[ds][m] = {"mean_auc": float(au.mean()), "std_auc": float(au.std()),
-                         "mean_select_sec": float(np.nanmean(ts))}
+            ci = float(1.96 * au.std(ddof=1) / np.sqrt(len(au))) if len(au) > 1 else 0.0
+            h3[ds][m] = {"mean_auc": float(au.mean()), "std_auc": float(au.std(ddof=1) if len(au) > 1 else 0.0),
+                         "ci95": ci, "mean_select_sec": float(np.nanmean(ts))}
             print(f"  {m:8s} AUC={au.mean():.4f}+/-{au.std():.4f}  "
                   f"sel_time={np.nanmean(ts):.4f}s")
     summary["H3_selection"] = h3

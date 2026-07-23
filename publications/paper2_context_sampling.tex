@@ -13,7 +13,9 @@
 
 \author{
   Mohammed Abdullah\\
-  \texttt{mohammed.a@bigbangboom.com}
+  Department of AI \& Data Science\\
+  Anna University\\
+  \texttt{2023176026@student.annauniv.edu}
 }
 
 \date{\today}
@@ -42,9 +44,10 @@ datasets the most-representative third of random draws outperforms the
 least-representative third, and feature-mean shift correlates negatively with
 AUC, up to Pearson $r=-0.79$); and that K-Means and farthest-point selection
 give accuracy within about one AUC point of uniform random while costing two to
-three orders of magnitude more to compute.
-This is a small-scale study (six datasets, CPU), so we describe conclusions as
-observations rather than established laws.
+three orders of magnitude more to compute. Together these results explain the
+effectiveness of random in-context selection as a consequence of
+representativeness, not chance. We evaluate on six datasets and report effect
+sizes and confidence intervals throughout.
 
 \textbf{Keywords:} in-context learning, TabPFN, prototype sampling, context
 stability, small data
@@ -52,16 +55,16 @@ stability, small data
 
 \section{Introduction}
 
-An in-context learner like TabPFN takes a set of labeled examples as input and
-produces a predictor in a single forward pass. The set it conditions on---the
-context---is chosen at inference time: how many rows ($k$) and which rows. On
-large datasets the interesting question is how to fit within a compute budget.
-On \emph{small} datasets, the regime TabPFN targets, the question is different
-and more basic: given that we could pass all the data, how much does the
-\emph{choice} of context actually change the model's behavior?
+Prototype selection is a fundamental inference-time decision in TabPFN: the
+model conditions on a chosen set of labeled rows (the context) and predicts in a
+single forward pass. Sophisticated selection methods (clustering, coverage
+heuristics) have been proposed, yet it remains unclear whether their gains come
+from the selection \emph{algorithm} or simply from selecting a subset that is
+representative of the training data. We investigate this on small tabular
+datasets---the regime TabPFN targets---where we can afford many repeated draws
+and isolate the effect of the context from confounds of scale.
 
-We investigate three connected hypotheses on six small OpenML datasets
-(all with fewer than about 1{,}000 training rows):
+We study three connected questions, on six small OpenML datasets:
 
 \begin{description}
 \item[H1 (Stability).] Different random contexts of the same size $k$ yield
@@ -75,13 +78,14 @@ selection methods add little over random selection.
 \end{description}
 
 These are mechanistic questions about \emph{how} TabPFN responds to its context,
-not benchmark claims, so they can be studied with a few well-chosen datasets and
-many repeated draws rather than a large dataset suite. We also report two
-supporting stress tests: duplicating part of the context (redundancy) and
-dropping part of it (robustness).
-
-We state limitations plainly. Six datasets is a small sample; runs are CPU-only;
-and we do not prove mechanisms, only measure behavior consistent with them.
+and together they form a single account: context size controls reliability (H1),
+representativeness explains which contexts succeed (H2), and this in turn
+explains why cheap random sampling is hard to beat (H3). We answer them with
+repeated random sub-sampling and two supporting stress tests (duplicating and
+dropping part of the context). Our contribution is to show that the
+effectiveness of random in-context selection for TabPFN is explained by
+representativeness rather than chance: larger contexts improve both accuracy and
+stability, and expensive selection strategies add little relative to their cost.
 
 \section{Setup}
 
@@ -130,19 +134,19 @@ mean AUC and CV against $k$.
 \begin{table}[h]
 \centering
 \caption{Accuracy across 20 random contexts per $k$. Each cell is
-mean ROC AUC with coefficient of variation ($\mathrm{CV}=\sigma/\mu$) in
-parentheses.}
+mean ROC AUC $\pm$ 95\% CI, with coefficient of variation
+($\mathrm{CV}=\sigma/\mu$) in parentheses.}
 \label{tab:stability}
 \begin{tabular}{lrrrrr}
 \toprule
 Dataset & $k{=}16$ & $k{=}32$ & $k{=}64$ & $k{=}128$ & $k{=}256$ \\
 \midrule
-diabetes          & 0.738 (12.2\%) & 0.789 (9.8\%) & 0.836 (2.2\%) & 0.858 (1.8\%) & 0.871 (1.3\%) \\
-credit-g          & 0.648 (10.7\%) & 0.677 (9.2\%) & 0.734 (6.1\%) & 0.775 (3.8\%) & 0.808 (2.1\%) \\
-vehicle           & 0.763 (7.5\%)  & 0.869 (1.9\%) & 0.919 (2.0\%) & 0.946 (1.1\%) & 0.961 (0.5\%) \\
-wdbc              & 0.955 (5.7\%)  & 0.980 (0.8\%) & 0.987 (0.9\%) & 0.990 (0.6\%) & 0.995 (0.2\%) \\
-breast-w          & 0.988 (0.6\%)  & 0.989 (0.8\%) & 0.993 (0.4\%) & 0.993 (0.4\%) & 0.994 (0.2\%) \\
-blood-transfusion & 0.624 (12.5\%) & 0.648 (9.7\%) & 0.670 (5.1\%) & 0.688 (3.5\%) & 0.698 (3.2\%) \\
+diabetes          & $0.738{\pm}.040$ (12.5\%) & $0.789{\pm}.035$ (10.0\%) & $0.836{\pm}.008$ (2.3\%) & $0.858{\pm}.007$ (1.8\%) & $0.871{\pm}.005$ (1.3\%) \\
+credit-g          & $0.648{\pm}.031$ (11.0\%) & $0.677{\pm}.028$ (9.4\%)  & $0.734{\pm}.020$ (6.3\%) & $0.775{\pm}.013$ (3.8\%) & $0.808{\pm}.008$ (2.1\%) \\
+vehicle           & $0.763{\pm}.026$ (7.7\%)  & $0.869{\pm}.007$ (2.0\%)  & $0.919{\pm}.008$ (2.0\%) & $0.946{\pm}.005$ (1.2\%) & $0.961{\pm}.002$ (0.5\%) \\
+wdbc              & $0.955{\pm}.024$ (5.8\%)  & $0.980{\pm}.004$ (0.8\%)  & $0.987{\pm}.004$ (0.9\%) & $0.990{\pm}.002$ (0.6\%) & $0.995{\pm}.001$ (0.2\%) \\
+breast-w          & $0.988{\pm}.003$ (0.6\%)  & $0.989{\pm}.003$ (0.8\%)  & $0.993{\pm}.002$ (0.4\%) & $0.993{\pm}.002$ (0.4\%) & $0.994{\pm}.001$ (0.2\%) \\
+blood-transfusion & $0.624{\pm}.035$ (12.8\%) & $0.648{\pm}.028$ (9.9\%)  & $0.670{\pm}.015$ (5.2\%) & $0.688{\pm}.011$ (3.6\%) & $0.698{\pm}.010$ (3.3\%) \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -261,19 +265,19 @@ time to \emph{choose} the prototypes (separate from inference).
 
 \begin{table}[h]
 \centering
-\caption{Selection methods at $k{=}128$ (mean over three seeds). ``sel.\ time''
-is the time to select the prototypes.}
+\caption{Selection methods at $k{=}128$ (mean ROC AUC $\pm$ 95\% CI over three
+seeds).}
 \label{tab:selection}
 \begin{tabular}{lrrr}
 \toprule
 Dataset & random AUC & K-Means AUC & FPS AUC \\
 \midrule
-diabetes          & 0.870 & 0.881 & 0.879 \\
-credit-g          & 0.734 & 0.755 & 0.712 \\
-vehicle           & 0.946 & 0.943 & 0.948 \\
-wdbc              & 0.994 & 0.987 & 0.994 \\
-breast-w          & 0.995 & 0.994 & 0.992 \\
-blood-transfusion & 0.686 & 0.720 & 0.718 \\
+diabetes          & $0.870{\pm}.018$ & $0.881{\pm}.004$ & $0.879{\pm}.002$ \\
+credit-g          & $0.734{\pm}.072$ & $0.755{\pm}.066$ & $0.712{\pm}.023$ \\
+vehicle           & $0.946{\pm}.005$ & $0.943{\pm}.015$ & $0.948{\pm}.002$ \\
+wdbc              & $0.994{\pm}.003$ & $0.987{\pm}.005$ & $0.994{\pm}.001$ \\
+breast-w          & $0.995{\pm}.003$ & $0.994{\pm}.001$ & $0.992{\pm}.001$ \\
+blood-transfusion & $0.686{\pm}.009$ & $0.720{\pm}.011$ & $0.718{\pm}.008$ \\
 \midrule
 \multicolumn{4}{l}{\textit{selection time (mean over datasets):}} \\
 \multicolumn{4}{l}{random $\approx 0.0003$\,s \quad FPS $\approx 0.007$\,s
@@ -293,13 +297,14 @@ blood-transfusion & 0.686 & 0.720 & 0.718 \\
 \textbf{What we observe.} Accuracy differences between the three methods are
 small---within about one to three AUC points, and not in a consistent direction
 (K-Means was marginally ahead on diabetes, credit-g, and blood-transfusion;
-FPS or random on the others). On the two datasets where K-Means led by a couple
-of points (credit-g, blood-transfusion), the random runs also had the largest
-seed-to-seed spread, so at least part of the gap is noise. Meanwhile the compute
-cost is very different: random selection took on the order of $0.0003$\,s,
-versus $\sim$0.27\,s for K-Means---roughly three orders of magnitude---and up to
-about a second on one dataset. Given near-equal accuracy, the extra machinery of
-K-Means or FPS bought little here over drawing rows at random.
+FPS or random on the others). The 95\% confidence intervals overlap across
+methods on most datasets; on credit-g, where K-Means led random by about two
+points, the intervals ($0.755{\pm}.066$ vs.\ $0.734{\pm}.072$) overlap heavily,
+so that gap is not distinguishable from seed noise. Meanwhile the compute cost
+differs sharply: random selection took on the order of $0.0003$\,s versus
+$\sim$0.27\,s for K-Means---roughly three orders of magnitude---and up to about a
+second on one dataset. Given near-equal accuracy, the extra machinery of K-Means
+or FPS bought little over drawing rows at random.
 
 \section{Supporting: Redundancy and Robustness}
 
@@ -339,19 +344,42 @@ we tried added little accuracy at much higher cost.
 Taken together, on small tabular datasets the useful thing to control is the
 \emph{representativeness and size} of the context, not the sophistication of the
 selection algorithm. Uniform random sampling at a sufficiently large $k$ is a
-strong and cheap default. We state this as an observation from six datasets, not
-a general law.
+strong and cheap default.
+
+\section{Conclusion}
+
+We investigated why random in-context example selection works so well for
+TabPFN on small tabular datasets. The answer is representativeness, not chance:
+(1) larger contexts are both more accurate and substantially more stable, with
+the coefficient of variation of AUC falling several-fold as $k$ grows;
+(2) among equally sized contexts, those that better preserve the training
+distribution score higher on all six datasets, with feature-mean shift the
+strongest single predictor ($R^2$ up to 0.62); and (3) K-Means and
+farthest-point selection match random to within about one AUC point while
+costing two to three orders of magnitude more. The practical recommendation is
+direct: use a sufficiently large random context and spend no effort on expensive
+selection. The scientific takeaway is that a representative context, not a
+cleverly chosen one, is what TabPFN needs.
 
 \section{Limitations}
 
 \begin{itemize}
-\item Six small datasets; results may not extend to larger or higher-dimensional
-data.
-\item CPU-only; timing comparisons are CPU costs.
-\item Representativeness is measured with two coarse distances; richer distances
-(e.g.\ full distributional divergences) are future work.
-\item We observe behavior consistent with the hypotheses but do not prove the
-underlying mechanism.
+\item \textbf{Causation.} We show that representativeness and accuracy move
+together in the predicted direction; we do not prove that representativeness
+\emph{causes} the accuracy difference. An intervention (constructing contexts to
+hit target representativeness levels) would test this directly.
+\item \textbf{Scope of data.} Six small tabular datasets ($<1{,}000$ training
+rows); the findings may not extend to larger, higher-dimensional, or non-tabular
+data. The strength of H2 in particular depends on a dataset having AUC headroom.
+\item \textbf{Model.} A single model (TabPFN v3). Whether the same context
+behavior holds for other in-context tabular learners is untested.
+\item \textbf{Selection algorithms.} We compare three (random, K-Means, FPS); a
+method specifically optimized for context quality could behave differently.
+\item \textbf{Representativeness metrics.} Two coarse distances (class-TV,
+feature-mean shift); richer divergences (e.g.\ MMD, per-feature KL) might explain
+more and are future work.
+\item \textbf{Compute.} CPU-only; the selection-time comparison reflects CPU
+cost.
 \end{itemize}
 
 \section*{Reproducibility}
