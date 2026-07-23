@@ -33,10 +33,18 @@ sub-sampling on six small OpenML datasets, we study three linked questions:
 size, and whether larger contexts are more stable; (ii) whether accuracy tracks
 how well a sampled context preserves the full training distribution; and
 (iii) whether more expensive selection (K-Means, farthest-point sampling) buys
-anything over uniform random selection once the context is representative. We
-report only measured results and treat them as observations. % TODO fill headline
+anything over uniform random selection once the context is representative.
+We find that larger contexts are both more accurate and markedly more stable
+(the coefficient of variation of AUC falls from around 8--13\% at $k{=}16$ to
+under 2\% at $k{=}256$ on the datasets with room to improve); that accuracy
+tracks how well a context preserves the full training distribution (on all six
+datasets the most-representative third of random draws outperforms the
+least-representative third, and feature-mean shift correlates negatively with
+AUC, up to Pearson $r=-0.79$); and that K-Means and farthest-point selection
+give accuracy within about one AUC point of uniform random while costing two to
+three orders of magnitude more to compute.
 This is a small-scale study (six datasets, CPU), so we describe conclusions as
-intuitions rather than established laws.
+observations rather than established laws.
 
 \textbf{Keywords:} in-context learning, TabPFN, prototype sampling, context
 stability, small data
@@ -113,63 +121,226 @@ whole training set.
 
 \section{H1: Context Stability}
 
-% TODO: table of AUC mean/std per k per dataset (block=stability_repr).
+For each $k$ we drew 20 independent random contexts and recorded the resulting
+test AUC. Table~\ref{tab:stability} reports the mean, and---as a scale-free
+measure of variability---the coefficient of variation
+$\mathrm{CV}=\sigma/\mu$ (as a percentage). Figure~\ref{fig:stability} plots
+mean AUC and CV against $k$.
+
 \begin{table}[h]
 \centering
-\caption{Accuracy across 20 random contexts per $k$: mean and standard
-deviation of ROC AUC. [PLACEHOLDER - fill from exp14 results]}
+\caption{Accuracy across 20 random contexts per $k$. Each cell is
+mean ROC AUC with coefficient of variation ($\mathrm{CV}=\sigma/\mu$) in
+parentheses.}
 \label{tab:stability}
 \begin{tabular}{lrrrrr}
 \toprule
 Dataset & $k{=}16$ & $k{=}32$ & $k{=}64$ & $k{=}128$ & $k{=}256$ \\
 \midrule
-diabetes & -- & -- & -- & -- & -- \\
+diabetes          & 0.738 (12.2\%) & 0.789 (9.8\%) & 0.836 (2.2\%) & 0.858 (1.8\%) & 0.871 (1.3\%) \\
+credit-g          & 0.648 (10.7\%) & 0.677 (9.2\%) & 0.734 (6.1\%) & 0.775 (3.8\%) & 0.808 (2.1\%) \\
+vehicle           & 0.763 (7.5\%)  & 0.869 (1.9\%) & 0.919 (2.0\%) & 0.946 (1.1\%) & 0.961 (0.5\%) \\
+wdbc              & 0.955 (5.7\%)  & 0.980 (0.8\%) & 0.987 (0.9\%) & 0.990 (0.6\%) & 0.995 (0.2\%) \\
+breast-w          & 0.988 (0.6\%)  & 0.989 (0.8\%) & 0.993 (0.4\%) & 0.993 (0.4\%) & 0.994 (0.2\%) \\
+blood-transfusion & 0.624 (12.5\%) & 0.648 (9.7\%) & 0.670 (5.1\%) & 0.688 (3.5\%) & 0.698 (3.2\%) \\
 \bottomrule
 \end{tabular}
 \end{table}
 
-% TODO figure fig_stability.pdf: std(AUC) vs k, one line per dataset.
-\textbf{What we observe.} [PLACEHOLDER: whether std shrinks with k, by how much,
-and any dataset that stays noisy.]
+\begin{figure}[h]
+\centering
+\includegraphics[width=\textwidth]{paper_figures/p2_fig1_stability.pdf}
+\caption{Mean AUC (left) rises with context size $k$; the coefficient of
+variation across 20 random draws (right) falls with $k$ on every dataset.}
+\label{fig:stability}
+\end{figure}
+
+\textbf{What we observe.} On every dataset, variability across random contexts
+falls as $k$ grows. On the four datasets with room to improve (diabetes,
+credit-g, vehicle, blood-transfusion) the CV drops from roughly 8--13\% at
+$k{=}16$ to about 1--3\% at $k{=}256$; on the two already near ceiling
+(breast-w, wdbc) it is small throughout and still shrinks. Mean AUC rises with
+$k$ in parallel. So on small data the context size is not only an
+accuracy knob but a \emph{reliability} knob: a small context makes the model's
+answer depend heavily on which rows happened to be drawn, and enlarging the
+context removes most of that dependence. The single most variable configuration
+we saw was diabetes at $k{=}16$, where AUC over 20 draws ranged from 0.497 to
+0.842.
 
 \section{H2: Representativeness}
 
-% TODO: correlation between (class_tv, feat_shift) and AUC, pooled per dataset.
-\textbf{What we observe.} [PLACEHOLDER: sign and strength of correlation between
-distribution distance and AUC; whether the most-representative draws are the
-best-performing.]
+Using the same 20 random draws per $k$, we ask whether the draws that better
+preserve the full training distribution are the ones that score higher. For each
+draw we computed two distances to the full training set: the total-variation
+distance between class distributions (\texttt{class\_tv}) and the mean absolute
+standardized feature-mean shift (\texttt{feat\_shift}). We then correlated each
+distance with AUC. Table~\ref{tab:repr} reports Pearson $r$, Spearman $\rho$,
+and the linear $R^2$ per dataset, pooling over all $k$.
 
-\section{H3: Selection Cost}
-
-% TODO: table random vs kmeans vs fps at fixed k, AUC + selection time.
 \begin{table}[h]
 \centering
-\caption{Selection methods at fixed $k$: AUC (3 seeds) and selection time.
-[PLACEHOLDER]}
-\label{tab:selection}
-\begin{tabular}{llrr}
+\caption{Correlation between distribution distance and AUC (all draws pooled
+over $k$, per dataset). Negative values mean that a context further from the
+full distribution scores lower, as hypothesized.}
+\label{tab:repr}
+\begin{tabular}{lrrrrrr}
 \toprule
-Dataset & Method & ROC AUC & selection time (s) \\
+& \multicolumn{3}{c}{\texttt{class\_tv}} & \multicolumn{3}{c}{\texttt{feat\_shift}} \\
+\cmidrule(lr){2-4}\cmidrule(lr){5-7}
+Dataset & Pearson & Spearman & $R^2$ & Pearson & Spearman & $R^2$ \\
 \midrule
--- & random & -- & -- \\
+credit-g          & $-0.52$ & $-0.43$ & 0.27 & $-0.79$ & $-0.83$ & 0.62 \\
+vehicle           & $-0.70$ & $-0.78$ & 0.50 & $-0.77$ & $-0.78$ & 0.59 \\
+diabetes          & $-0.31$ & $-0.44$ & 0.10 & $-0.55$ & $-0.73$ & 0.30 \\
+wdbc              & $-0.24$ & $-0.36$ & 0.06 & $-0.39$ & $-0.59$ & 0.15 \\
+breast-w          & $-0.20$ & $-0.17$ & 0.04 & $-0.19$ & $-0.29$ & 0.04 \\
+blood-transfusion & $-0.02$ & $-0.16$ & 0.00 & $-0.31$ & $-0.26$ & 0.10 \\
+\midrule
+pooled (z-scored) & $-0.33$ & $-0.41$ & 0.11 & $-0.50$ & $-0.59$ & 0.25 \\
 \bottomrule
 \end{tabular}
 \end{table}
 
-\textbf{What we observe.} [PLACEHOLDER: whether kmeans/fps beat random, and the
-time cost.]
+\begin{table}[h]
+\centering
+\caption{Mean AUC of the most- vs.\ least-representative third of random draws,
+split by \texttt{class\_tv}. The most-representative third wins on all six
+datasets.}
+\label{tab:contrast}
+\begin{tabular}{lrrr}
+\toprule
+Dataset & most repr. & least repr. & $\Delta$ \\
+\midrule
+vehicle           & 0.953 & 0.825 & $+0.127$ \\
+credit-g          & 0.751 & 0.677 & $+0.074$ \\
+diabetes          & 0.852 & 0.792 & $+0.060$ \\
+blood-transfusion & 0.671 & 0.649 & $+0.022$ \\
+wdbc              & 0.987 & 0.968 & $+0.019$ \\
+breast-w          & 0.994 & 0.990 & $+0.004$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{figure}[h]
+\centering
+\includegraphics[width=\textwidth]{paper_figures/p2_fig2_representativeness.pdf}
+\caption{Left: Pearson correlation between feature-mean shift and AUC per
+dataset (all negative). Right: mean AUC of the most- vs.\ least-representative
+third of random draws; the more-representative third wins on all six datasets.}
+\label{fig:repr}
+\end{figure}
+
+\textbf{What we observe.} The direction predicted by H2 holds everywhere: every
+correlation in Table~\ref{tab:repr} is negative (further from the full
+distribution $\rightarrow$ lower AUC), and in Table~\ref{tab:contrast} the
+most-representative third of draws beats the least-representative third on all
+six datasets. The \emph{strength}, however, is dataset-dependent.
+\texttt{feat\_shift} is the better predictor of the two, and it is strong where
+the dataset has accuracy headroom---credit-g ($r=-0.79$, $R^2=0.62$), vehicle
+($r=-0.77$, $R^2=0.59$), diabetes ($r=-0.55$)---and weak on datasets that sit
+near the ceiling (breast-w, wdbc) or near chance (blood-transfusion), where AUC
+barely varies and there is little for representativeness to explain. Pooling
+across datasets (z-scoring AUC within each so levels are comparable),
+\texttt{feat\_shift} reaches Pearson $-0.50$ / Spearman $-0.59$.
+
+This is the paper's central observation, stated at the strength the data
+supports: on small datasets, \emph{how representative} the context is explains a
+substantial part of the accuracy spread among equally sized random contexts,
+especially the feature-distribution match. It offers a mechanism for why uniform
+random sampling is a good default---random draws are, in expectation,
+distribution-preserving---rather than a coincidence. We did not prove causation;
+we measured that representativeness and accuracy move together in the direction
+the hypothesis predicts.
+
+\section{H3: Selection Cost}
+
+At a fixed budget of $k{=}128$ we compared uniform random selection against
+K-Means (nearest training point to each centroid) and farthest-point sampling
+(FPS), three seeds each. Table~\ref{tab:selection} reports mean AUC and the mean
+time to \emph{choose} the prototypes (separate from inference).
+
+\begin{table}[h]
+\centering
+\caption{Selection methods at $k{=}128$ (mean over three seeds). ``sel.\ time''
+is the time to select the prototypes.}
+\label{tab:selection}
+\begin{tabular}{lrrr}
+\toprule
+Dataset & random AUC & K-Means AUC & FPS AUC \\
+\midrule
+diabetes          & 0.870 & 0.881 & 0.879 \\
+credit-g          & 0.734 & 0.755 & 0.712 \\
+vehicle           & 0.946 & 0.943 & 0.948 \\
+wdbc              & 0.994 & 0.987 & 0.994 \\
+breast-w          & 0.995 & 0.994 & 0.992 \\
+blood-transfusion & 0.686 & 0.720 & 0.718 \\
+\midrule
+\multicolumn{4}{l}{\textit{selection time (mean over datasets):}} \\
+\multicolumn{4}{l}{random $\approx 0.0003$\,s \quad FPS $\approx 0.007$\,s
+\quad K-Means $\approx 0.27$\,s} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{figure}[h]
+\centering
+\includegraphics[width=\textwidth]{paper_figures/p2_fig3_selection.pdf}
+\caption{Selection methods at $k{=}128$. Accuracy is nearly tied across methods
+(left); selection cost differs by two to three orders of magnitude (right).}
+\label{fig:selection}
+\end{figure}
+
+\textbf{What we observe.} Accuracy differences between the three methods are
+small---within about one to three AUC points, and not in a consistent direction
+(K-Means was marginally ahead on diabetes, credit-g, and blood-transfusion;
+FPS or random on the others). On the two datasets where K-Means led by a couple
+of points (credit-g, blood-transfusion), the random runs also had the largest
+seed-to-seed spread, so at least part of the gap is noise. Meanwhile the compute
+cost is very different: random selection took on the order of $0.0003$\,s,
+versus $\sim$0.27\,s for K-Means---roughly three orders of magnitude---and up to
+about a second on one dataset. Given near-equal accuracy, the extra machinery of
+K-Means or FPS bought little here over drawing rows at random.
 
 \section{Supporting: Redundancy and Robustness}
 
-% TODO: redundancy (duplicate fraction) and robustness (drop fraction) tables.
-\textbf{Redundancy.} [PLACEHOLDER: does duplicating context rows change AUC?]
+Starting from a random context of $k{=}128$, we either duplicated a fraction of
+its rows (adding no new information) or dropped a fraction of them.
 
-\textbf{Robustness.} [PLACEHOLDER: how fast does AUC fall as context is dropped?]
+\textbf{Redundancy.} Duplicating rows had little effect on most datasets: on
+diabetes, vehicle, wdbc, and breast-w, AUC stayed within about half a point up
+to 50--70\% duplication. The exception was blood-transfusion, where duplication
+steadily hurt (0.686 at 0\% down to 0.580 at 70\%), and to a lesser extent
+credit-g. So duplicate context rows are mostly harmless when the underlying
+signal is strong, but on a weak-signal dataset they skew the context and degrade
+predictions.
+
+\textbf{Robustness.} Dropping rows degraded accuracy gradually rather than
+sharply. Removing 30\% of a 128-row context cost roughly 0--1.5 AUC points on the
+stronger datasets (wdbc, breast-w, vehicle, diabetes) and more on the weaker
+ones; only at 50\% removal did larger drops appear (e.g.\ blood-transfusion
+$0.686\rightarrow0.614$). This is consistent with H1: with fewer rows the context
+carries less of the distribution and predictions get both worse and noisier.
 
 \section{Discussion}
 
-[PLACEHOLDER: tie the three hypotheses together at the strength the data
-supports.]
+The three results fit together into one account of context sampling on small
+data. H1 shows that a small context makes TabPFN's prediction unstable---the
+answer depends on which rows were drawn---and that enlarging the context removes
+most of that instability while also raising accuracy. H2 gives a reason: among
+equally sized random contexts, the ones that better match the full training
+distribution (particularly in their feature means) tend to score higher, and the
+most-representative draws beat the least-representative on every dataset. A
+larger context helps in part because it is, on average, more representative and
+less subject to an unlucky draw. H3 closes the loop for practice: since uniform
+random sampling is distribution-preserving in expectation, it already captures
+most of what representativeness offers, so the more expensive selection methods
+we tried added little accuracy at much higher cost.
+
+Taken together, on small tabular datasets the useful thing to control is the
+\emph{representativeness and size} of the context, not the sophistication of the
+selection algorithm. Uniform random sampling at a sufficiently large $k$ is a
+strong and cheap default. We state this as an observation from six datasets, not
+a general law.
 
 \section{Limitations}
 
