@@ -2667,8 +2667,31 @@ CV falls with k on every dataset. Larger context = more accurate AND more stable
 **Redundancy/Robustness**: mostly flat on strong-signal datasets; blood-transfusion
 (weak signal) degrades under both duplication and heavy dropping.
 
-### Optional cheap follow-up (not yet run)
+### Cross-method follow-up (exp14b) - DONE, informative NEGATIVE result
 
-To make H2 fully cross-method, log class_tv/feat_shift on the kmeans/fps selection
-draws too, then show representativeness predicts AUC across ALL selection methods
-(not just random draws). Current evidence already supports H2 directionally on all 6.
+Ran exp14b_cross_method_repr.py: 8 seeds x 3 methods (random/kmeans/fps) at k=128
+on all 6 datasets, logging feat_shift + class_tv per context.
+Result file: exp14b_cross_method_20260723_171306.json.
+
+Finding: representativeness does NOT predict AUC across selection methods.
+- kmeans/fps pick diverse points -> much higher feat_shift than random
+  (e.g. blood-transfusion random 0.066 vs fps 0.685) YET equal-or-better AUC.
+- Pooling all 3 methods, feat_shift->AUC correlation collapses to ~+0.16
+  (even flips sign on some datasets), vs -0.50 within random draws.
+
+Interpretation (added to Paper 2 as a boundary on H2, not a refutation):
+representativeness explains which RANDOM contexts win and why random is a strong
+default, but it is not a universal currency of context quality - kmeans/fps reach
+comparable accuracy via coverage, a different route. Practical consequence
+unchanged: diversity methods don't beat random enough to justify their cost.
+
+This is an honest negative that SHARPENS the paper rather than weakening it.
+
+### Paper folder structure (2026-07-23)
+
+publications/paper1/ (broad report) and publications/paper2/ (small-data H1/H2/H3),
+each self-contained: <paper>.tex + generate_*.py + figures/. Stale
+ARXIV_SUBMISSION_CHECKLIST.md removed (tracked here instead).
+
+Paper 2 must-fixes done: confident contribution framing (abstract/intro/conclusion),
+95% CIs + effect sizes throughout, expanded limitations, de-hedged tone.

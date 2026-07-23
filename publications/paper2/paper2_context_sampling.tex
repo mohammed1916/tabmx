@@ -256,6 +256,54 @@ distribution-preserving---rather than a coincidence. We did not prove causation;
 we measured that representativeness and accuracy move together in the direction
 the hypothesis predicts.
 
+\subsection{Does representativeness explain quality \emph{across} selection
+methods?}
+
+The correlations above are computed within random draws, which vary in
+representativeness only by chance. A stronger question is whether the same
+distance-to-full metric predicts AUC \emph{across} selection methods. We
+generated 8 contexts each of random, K-Means, and FPS at $k{=}128$ and pooled
+all 24 per dataset. The answer is \textbf{no}, and the reason is instructive.
+By construction, K-Means and FPS pick diverse, spread-out points, so their
+feature-mean shift is far larger than random's (Table~\ref{tab:crossrepr})---yet
+their accuracy is equal or higher. Consequently, when methods are pooled, the
+feat\_shift$\rightarrow$AUC relationship weakens and on some datasets reverses
+sign (pooled Pearson $\approx +0.16$, versus $-0.50$ within random draws).
+
+\begin{table}[h]
+\centering
+\caption{Mean feature-mean shift and AUC by selection method at $k{=}128$
+(8 seeds). K-Means/FPS are much less representative (higher shift) than random
+yet score as well or better---so representativeness does not rank methods.}
+\label{tab:crossrepr}
+\begin{tabular}{llrr}
+\toprule
+Dataset & Method & feat\_shift & ROC AUC \\
+\midrule
+diabetes          & random & 0.050 & 0.846 \\
+                  & K-Means & 0.147 & 0.874 \\
+                  & FPS     & 0.268 & 0.872 \\
+\midrule
+blood-transfusion & random & 0.066 & 0.681 \\
+                  & K-Means & 0.538 & 0.728 \\
+                  & FPS     & 0.685 & 0.720 \\
+\midrule
+wdbc              & random & 0.052 & 0.992 \\
+                  & K-Means & 0.371 & 0.991 \\
+                  & FPS     & 0.443 & 0.994 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+We read this as a boundary on H2, not a refutation. Representativeness explains
+which \emph{random} contexts do better, and it explains why random sampling is a
+strong default; but it is not a universal currency of context quality. K-Means
+and FPS reach comparable accuracy by a different route---covering the feature
+space rather than matching its distribution---so a single distance-to-full
+number cannot rank strategies that operate on different principles. The
+practical consequence is unchanged (see H3, Table~\ref{tab:selection}): those
+diversity-based methods do not beat random enough to justify their cost.
+
 \section{H3: Selection Cost}
 
 At a fixed budget of $k{=}128$ we compared uniform random selection against
@@ -358,16 +406,20 @@ strongest single predictor ($R^2$ up to 0.62); and (3) K-Means and
 farthest-point selection match random to within about one AUC point while
 costing two to three orders of magnitude more. The practical recommendation is
 direct: use a sufficiently large random context and spend no effort on expensive
-selection. The scientific takeaway is that a representative context, not a
-cleverly chosen one, is what TabPFN needs.
+selection. The scientific takeaway is that representativeness explains why random
+sampling succeeds---though it is not the only route to a good context, since
+diversity-based methods reach similar accuracy differently, they do not do so
+cheaply enough to matter.
 
 \section{Limitations}
 
 \begin{itemize}
-\item \textbf{Causation.} We show that representativeness and accuracy move
-together in the predicted direction; we do not prove that representativeness
-\emph{causes} the accuracy difference. An intervention (constructing contexts to
-hit target representativeness levels) would test this directly.
+\item \textbf{Causation and scope of H2.} We show that representativeness and
+accuracy move together across random draws; we do not prove causation, and the
+relationship does not hold \emph{across} selection methods (K-Means and FPS are
+less representative yet equally accurate). Representativeness explains random
+sampling, not context quality in general. An intervention (constructing contexts
+at target representativeness levels) would test the causal claim directly.
 \item \textbf{Scope of data.} Six small tabular datasets ($<1{,}000$ training
 rows); the findings may not extend to larger, higher-dimensional, or non-tabular
 data. The strength of H2 in particular depends on a dataset having AUC headroom.
@@ -384,9 +436,11 @@ cost.
 
 \section*{Reproducibility}
 
-All numbers are read from a single logged run
-(\texttt{experiments/results/exp14\_context\_sampling\_*.json}). Datasets are
-public OpenML tasks; the split seed and per-block seeds are recorded.
+All numbers are read from logged runs
+(\texttt{experiments/results/exp14\_context\_sampling\_*.json} for H1--H3 and the
+stress tests; \texttt{exp14b\_cross\_method\_*.json} for the cross-method
+analysis). Datasets are public OpenML tasks; the split seed and per-block seeds
+are recorded.
 
 \begin{thebibliography}{9}
 \bibitem{hollmann2024tabpfn}
