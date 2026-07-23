@@ -2504,3 +2504,90 @@ publications/
 6. Professional tone, academic style
 
 **Next Step**: Submit paper_arxiv.tex to arXiv.org
+
+---
+
+## Part 28: Phase A Progress and CPU Bottleneck (2026-07-23)
+
+### Current Experiment Run Status
+
+**Exp13 Phase A** (background task bwqijjytl):
+- **Device**: CPU (no CUDA GPU available on this machine)
+- **Status**: Incomplete due to CPU speed
+- **Progress**: 
+  - ✅ diabetes (768 rows): Complete, k=32 to full tested
+  - ✅ credit-g (1,000 rows): Complete, k=32 to full tested
+  - ⏳ bank-marketing (45,211 rows): Started at k=32, stuck at k=64
+  - Other datasets: Not reached
+
+### Results Collected So Far
+
+**diabetes**: AUC=0.8556 (stable across all k values)
+- All k ∈ {32, 64, 128, 256, 512, 1024, 2048, 4096, 8192, 16384, full} show identical AUC
+- k99=full (no saturation observed with only 768 samples)
+
+**credit-g**: AUC=0.8067 (stable across all k values)
+- All k values show identical AUC (1,000 samples)
+- k99=full (small dataset, no saturation)
+
+**bank-marketing**: Started but not completed
+- k=32: AUC=0.9396
+- k=64: Measurement in progress when process stopped (CPU bound)
+
+### Key Lesson: CPU vs GPU Impact
+
+**Problem**: Python execution on CPU takes ~20-30 min per dataset × 11 k values = ~220-330 min per medium-size dataset (impossible for 50 datasets)
+
+**Solution**: Phase A requires GPU acceleration. Without CUDA:
+- Small datasets (768-1K rows): Complete in ~15-20 min total
+- Medium datasets (10K-50K rows): Estimated 3-5 hours each
+- Large datasets (100K+ rows): 10+ hours each
+
+### Implications for Phase A
+
+With CPU only:
+- 6-7 datasets in Phase A would take 50-100 hours (~2-4 days continuous)
+- 50-dataset benchmark infeasible within reasonable time
+
+**Recommendation**: 
+1. Pause Phase A expansion until GPU access confirmed
+2. Focus on analysis of small-dataset results (diabetes, credit-g pattern)
+3. Document code/methodology for GPU-accelerated run later
+
+### Current Complete Results Format (JSON)
+
+```json
+{
+  "phase": "A",
+  "dataset": "diabetes",
+  "n_samples": 768,
+  "n_features": 8,
+  "n_classes": 2,
+  "k": 32,
+  "auc": 0.8556,
+  "fit_sec": 1.1,
+  "predict_sec": 23.1,
+  "total_sec": 24.2,
+  "samples_per_sec": 32.9,
+  "log_n": 6.64,
+  "log_m": 2.08,
+  "numeric_ratio": 1.0,
+  "categorical_ratio": 0.0,
+  "missing_ratio": 0.0,
+  "class_entropy": 0.93,
+  "minority_class_ratio": 0.31,
+  "n_m_ratio": 96.0
+}
+```
+
+### What This Tells Us
+
+**Early Pattern** (from 2 datasets):
+- Very small datasets (n < 1.5K): No saturation observed
+- All k values perform identically (no diminishing returns yet visible)
+- Suggests k99 depends on dataset size; larger datasets needed to see saturation
+
+**Next Phase Requirement**: 
+- Measure larger datasets (10K+) where saturation hypothesis can be tested
+- Expect k99 < full for medium/large datasets
+- Determine whether saturation point correlates with log(n), sqrt(n), or other meta-feature
