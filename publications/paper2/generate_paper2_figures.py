@@ -8,9 +8,9 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 ROOT = Path(__file__).parent
-FIG = ROOT / "paper_figures"
+FIG = ROOT / "figures"
 FIG.mkdir(exist_ok=True)
-SUMMARY = ROOT.parent / "experiments" / "results" / "exp14_analysis_summary.json"
+SUMMARY = ROOT.parent.parent / "experiments" / "results" / "exp14_analysis_summary.json"
 
 S = json.loads(SUMMARY.read_text())
 H1 = S["H1_stability"]

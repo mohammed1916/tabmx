@@ -14,7 +14,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from pathlib import Path
 
-FIGURES_DIR = Path(__file__).parent / "paper_figures"
+FIGURES_DIR = Path(__file__).parent / "figures"
 FIGURES_DIR.mkdir(exist_ok=True)
 
 # ---------------------------------------------------------------------------

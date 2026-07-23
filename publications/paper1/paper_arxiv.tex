@@ -121,7 +121,7 @@ read as GPU deployment numbers.
 
 \begin{figure}[h]
 \centering
-\includegraphics[width=\textwidth]{paper_figures/fig1_scaling.pdf}
+\includegraphics[width=\textwidth]{figures/fig1_scaling.pdf}
 \caption{Full-context AUC vs.\ training size on bank-marketing and adult (CPU,
 seed 42). Gains diminish as $n$ grows; LightGBM is competitive and much faster.}
 \label{fig:scaling}
@@ -151,7 +151,7 @@ $k$ & ROC AUC \\
 
 \begin{figure}[h]
 \centering
-\includegraphics[width=0.7\textwidth]{paper_figures/fig2_k_sweep.pdf}
+\includegraphics[width=0.7\textwidth]{figures/fig2_k_sweep.pdf}
 \caption{ROC AUC vs.\ prototype count $k$ on electricity. Accuracy keeps rising
 through $k{=}2048$; no plateau is seen in the tested range.}
 \label{fig:ksweep}
@@ -274,7 +274,7 @@ measure distribution similarity, so this remains an intuition.
 
 \begin{figure}[h]
 \centering
-\includegraphics[width=\textwidth]{paper_figures/fig3_selection.pdf}
+\includegraphics[width=\textwidth]{figures/fig3_selection.pdf}
 \caption{Selection methods at $k{=}512$. Accuracy differences are small (left);
 random selection is about three orders of magnitude cheaper to compute (right).}
 \label{fig:selection}
@@ -303,7 +303,7 @@ bank-marketing & 0.9193 & 0.8982 & 0.8664 & 0.8439 \\
 
 \begin{figure}[h]
 \centering
-\includegraphics[width=0.7\textwidth]{paper_figures/fig4_multihead.pdf}
+\includegraphics[width=0.7\textwidth]{figures/fig4_multihead.pdf}
 \caption{Mean AUC as a fixed budget $k_{\text{total}}{=}1024$ is split across
 more heads. Accuracy falls monotonically on both datasets.}
 \label{fig:multihead}
