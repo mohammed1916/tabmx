@@ -2631,8 +2631,44 @@ Verified with `experiments/verify_ksub.py` on diabetes: AUC now varies with k
 diabetes (768), credit-g (1000), vehicle (846, 4-class), wdbc (569),
 breast-w (699), blood-transfusion (748). All verified to load.
 
-### Status
+### Status: COMPLETE (exp14 finished, Paper 2 filled)
 
-exp14 running on CPU (background). Paper 2 skeleton written with placeholders;
-fill tables/figures from `exp14_context_sampling_*.json` once complete. No claims
-until data is in.
+exp14 ran to completion on all 6 datasets (CPU, seed-controlled).
+Results file: `exp14_context_sampling_20260723_154259.json` (834 records).
+Analysis: `analyze_exp14.py` -> `exp14_analysis_summary.json`.
+Paper 2 filled with measured numbers + 3 figures (no placeholders).
+
+### Measured Results
+
+**H1 Stability** (CV = std/mean of AUC across 20 random draws):
+| Dataset | CV@k=16 | CV@k=256 |
+|---------|---------|----------|
+| diabetes | 12.2% | 1.3% |
+| credit-g | 10.7% | 2.1% |
+| vehicle | 7.5% | 0.5% |
+| blood-transfusion | 12.5% | 3.2% |
+| wdbc | 5.7% | 0.2% |
+| breast-w | 0.6% | 0.2% |
+CV falls with k on every dataset. Larger context = more accurate AND more stable.
+
+**H2 Representativeness** (correlation of distance-to-full vs AUC):
+- feat_shift is stronger predictor than class_tv; all correlations negative (as hypothesized).
+- Strong where AUC has headroom: credit-g (Pearson -0.79, R2=0.62), vehicle (-0.77, R2=0.59), diabetes (-0.55).
+- Weak near ceiling (breast-w, wdbc) or chance (blood-transfusion) - little variance to explain.
+- Pooled (z-scored within dataset): feat_shift Pearson -0.50, Spearman -0.59.
+- Most-representative third of draws beats least-representative on ALL 6 datasets (delta +0.004 to +0.127).
+- This is the paper's centerpiece: representativeness explains much of the AUC spread among
+  equal-size random contexts. Reported as observation, not proven causation.
+
+**H3 Selection cost** (random vs kmeans vs fps at k=128):
+- AUC differences small (~1-3 points), not consistent in direction; part is seed noise.
+- Selection time: random ~0.0003s, fps ~0.007s, kmeans ~0.27s (~1000x). Expensive selection adds little.
+
+**Redundancy/Robustness**: mostly flat on strong-signal datasets; blood-transfusion
+(weak signal) degrades under both duplication and heavy dropping.
+
+### Optional cheap follow-up (not yet run)
+
+To make H2 fully cross-method, log class_tv/feat_shift on the kmeans/fps selection
+draws too, then show representativeness predicts AUC across ALL selection methods
+(not just random draws). Current evidence already supports H2 directionally on all 6.
