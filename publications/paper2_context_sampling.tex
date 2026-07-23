@@ -1,0 +1,199 @@
+\documentclass[11pt,a4paper]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{hyperref}
+\usepackage{geometry}
+\geometry{margin=0.8in}
+
+\title{Understanding Context Sampling in TabPFN\\ on Small Tabular Datasets}
+
+\author{
+  Mohammed Abdullah\\
+  \texttt{mohammed.a@bigbangboom.com}
+}
+
+\date{\today}
+
+\begin{document}
+
+\maketitle
+
+\begin{abstract}
+TabPFN classifies by in-context learning: it conditions on a set of labeled
+training rows (the context, or prototypes) and predicts test labels without
+gradient updates. On small tabular datasets, where TabPFN is designed to be
+used, the practitioner still chooses how large that context is and which rows
+go into it. We ask how much those choices matter. Using repeated random
+sub-sampling on six small OpenML datasets, we study three linked questions:
+(i) how variable predictions are across different random contexts of the same
+size, and whether larger contexts are more stable; (ii) whether accuracy tracks
+how well a sampled context preserves the full training distribution; and
+(iii) whether more expensive selection (K-Means, farthest-point sampling) buys
+anything over uniform random selection once the context is representative. We
+report only measured results and treat them as observations. % TODO fill headline
+This is a small-scale study (six datasets, CPU), so we describe conclusions as
+intuitions rather than established laws.
+
+\textbf{Keywords:} in-context learning, TabPFN, prototype sampling, context
+stability, small data
+\end{abstract}
+
+\section{Introduction}
+
+An in-context learner like TabPFN takes a set of labeled examples as input and
+produces a predictor in a single forward pass. The set it conditions on---the
+context---is chosen at inference time: how many rows ($k$) and which rows. On
+large datasets the interesting question is how to fit within a compute budget.
+On \emph{small} datasets, the regime TabPFN targets, the question is different
+and more basic: given that we could pass all the data, how much does the
+\emph{choice} of context actually change the model's behavior?
+
+We investigate three connected hypotheses on six small OpenML datasets
+(all with fewer than about 1{,}000 training rows):
+
+\begin{description}
+\item[H1 (Stability).] Different random contexts of the same size $k$ yield
+different predictions; the spread of accuracy across random draws shrinks as $k$
+grows.
+\item[H2 (Representativeness).] A context that better preserves the full
+training distribution yields higher accuracy; this is why uniform random
+sampling works well.
+\item[H3 (Selection cost).] Once a context is representative, expensive
+selection methods add little over random selection.
+\end{description}
+
+These are mechanistic questions about \emph{how} TabPFN responds to its context,
+not benchmark claims, so they can be studied with a few well-chosen datasets and
+many repeated draws rather than a large dataset suite. We also report two
+supporting stress tests: duplicating part of the context (redundancy) and
+dropping part of it (robustness).
+
+We state limitations plainly. Six datasets is a small sample; runs are CPU-only;
+and we do not prove mechanisms, only measure behavior consistent with them.
+
+\section{Setup}
+
+We use TabPFN v3 with \texttt{ignore\_pretraining\_limits=True}. Each dataset is
+split 80/20 (stratified, fixed split seed). A context of size $k$ is formed by
+selecting $k$ training rows and fitting TabPFN on exactly those rows
+(\texttt{clf.fit(X[idx], y[idx])}); the held-out 20\% is the test set throughout.
+We report ROC AUC (one-vs-rest macro for the multiclass dataset). For the
+stability and representativeness analyses we draw \textbf{20 independent random
+contexts} per $k$; for selection-method and stress tests we use three seeds.
+
+\begin{table}[h]
+\centering
+\caption{Datasets (all small; public OpenML).}
+\label{tab:datasets}
+\begin{tabular}{lrrr}
+\toprule
+Dataset & rows & features & classes \\
+\midrule
+diabetes           & 768  & 8  & 2 \\
+credit-g           & 1000 & 20 & 2 \\
+vehicle            & 846  & 18 & 4 \\
+wdbc               & 569  & 30 & 2 \\
+breast-w           & 699  & 9  & 2 \\
+blood-transfusion  & 748  & 4  & 2 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\textbf{Representativeness metrics.} For a sampled context we measure two simple
+distances from the full training set: (i) the total-variation distance between
+the context's class distribution and the full class distribution
+(\texttt{class\_tv}); and (ii) the mean absolute difference between the
+context's standardized per-feature means and the full training means
+(\texttt{feat\_shift}). Smaller values mean the context looks more like the
+whole training set.
+
+\section{H1: Context Stability}
+
+% TODO: table of AUC mean/std per k per dataset (block=stability_repr).
+\begin{table}[h]
+\centering
+\caption{Accuracy across 20 random contexts per $k$: mean and standard
+deviation of ROC AUC. [PLACEHOLDER - fill from exp14 results]}
+\label{tab:stability}
+\begin{tabular}{lrrrrr}
+\toprule
+Dataset & $k{=}16$ & $k{=}32$ & $k{=}64$ & $k{=}128$ & $k{=}256$ \\
+\midrule
+diabetes & -- & -- & -- & -- & -- \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+% TODO figure fig_stability.pdf: std(AUC) vs k, one line per dataset.
+\textbf{What we observe.} [PLACEHOLDER: whether std shrinks with k, by how much,
+and any dataset that stays noisy.]
+
+\section{H2: Representativeness}
+
+% TODO: correlation between (class_tv, feat_shift) and AUC, pooled per dataset.
+\textbf{What we observe.} [PLACEHOLDER: sign and strength of correlation between
+distribution distance and AUC; whether the most-representative draws are the
+best-performing.]
+
+\section{H3: Selection Cost}
+
+% TODO: table random vs kmeans vs fps at fixed k, AUC + selection time.
+\begin{table}[h]
+\centering
+\caption{Selection methods at fixed $k$: AUC (3 seeds) and selection time.
+[PLACEHOLDER]}
+\label{tab:selection}
+\begin{tabular}{llrr}
+\toprule
+Dataset & Method & ROC AUC & selection time (s) \\
+\midrule
+-- & random & -- & -- \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\textbf{What we observe.} [PLACEHOLDER: whether kmeans/fps beat random, and the
+time cost.]
+
+\section{Supporting: Redundancy and Robustness}
+
+% TODO: redundancy (duplicate fraction) and robustness (drop fraction) tables.
+\textbf{Redundancy.} [PLACEHOLDER: does duplicating context rows change AUC?]
+
+\textbf{Robustness.} [PLACEHOLDER: how fast does AUC fall as context is dropped?]
+
+\section{Discussion}
+
+[PLACEHOLDER: tie the three hypotheses together at the strength the data
+supports.]
+
+\section{Limitations}
+
+\begin{itemize}
+\item Six small datasets; results may not extend to larger or higher-dimensional
+data.
+\item CPU-only; timing comparisons are CPU costs.
+\item Representativeness is measured with two coarse distances; richer distances
+(e.g.\ full distributional divergences) are future work.
+\item We observe behavior consistent with the hypotheses but do not prove the
+underlying mechanism.
+\end{itemize}
+
+\section*{Reproducibility}
+
+All numbers are read from a single logged run
+(\texttt{experiments/results/exp14\_context\_sampling\_*.json}). Datasets are
+public OpenML tasks; the split seed and per-block seeds are recorded.
+
+\begin{thebibliography}{9}
+\bibitem{hollmann2024tabpfn}
+Hollmann, N., Müller, S., Eggensperger, K., \& Hutter, F. (2024).
+Accurate predictions on small data with a tabular foundation model.
+\textit{Nature}.
+\end{thebibliography}
+
+\end{document}

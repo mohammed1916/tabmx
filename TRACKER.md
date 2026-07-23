@@ -2591,3 +2591,48 @@ With CPU only:
 - Measure larger datasets (10K+) where saturation hypothesis can be tested
 - Expect k99 < full for medium/large datasets
 - Determine whether saturation point correlates with log(n), sqrt(n), or other meta-feature
+
+---
+
+## Part 29: Pivot to Small-Data Study (Paper 2) (2026-07-23)
+
+### Decision
+
+Large datasets are impractical here (CPU-only, no GPU). Rather than fight that,
+we pivot the NEW work to small datasets, where TabPFN is designed to be used and
+where many repeated runs are cheap on CPU. Two separate papers:
+
+- **Paper 1** (`publications/paper_arxiv.tex`): the existing empirical report
+  (context size, prototype count, selection methods, distribution shift). Left
+  as-is; already rewritten to report only measured numbers.
+- **Paper 2** (`publications/paper2_context_sampling.tex`): NEW. "Understanding
+  Context Sampling in TabPFN on Small Tabular Datasets." Three linked hypotheses.
+
+### Critical bug found and fixed
+
+exp13's "curves" showed identical AUC across all k because it fit TabPFN on the
+FULL training set every time; the k parameter was never applied. The correct
+path (from exp2) is: select k indices, then `clf.fit(X_train[idx], y_train[idx])`.
+Verified with `experiments/verify_ksub.py` on diabetes: AUC now varies with k
+(k=16 -> 0.8294, k=614 -> 0.8807). exp14 uses this verified path throughout.
+
+### Paper 2 hypotheses (exp14_context_sampling.py)
+
+- **H1 Stability**: 20 random contexts per k; report mean/std AUC. Does variance
+  shrink as k grows?
+- **H2 Representativeness**: per draw, measure class-distribution TV distance and
+  standardized feature-mean shift vs full training set; correlate with AUC.
+- **H3 Selection cost**: random vs kmeans vs fps at fixed k (AUC + selection time).
+- **Supporting**: redundancy (duplicate fraction of context) and robustness
+  (drop fraction of context).
+
+### Datasets (all small, public OpenML)
+
+diabetes (768), credit-g (1000), vehicle (846, 4-class), wdbc (569),
+breast-w (699), blood-transfusion (748). All verified to load.
+
+### Status
+
+exp14 running on CPU (background). Paper 2 skeleton written with placeholders;
+fill tables/figures from `exp14_context_sampling_*.json` once complete. No claims
+until data is in.
