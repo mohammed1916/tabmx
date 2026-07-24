@@ -59,10 +59,10 @@ diversity, coverage, context stability, small data
 \section{Introduction}
 
 Prototype selection is a fundamental inference-time decision in TabPFN
-\cite{hollmann2025tabpfn}: the model conditions on a chosen set of labeled rows
-(the context) and predicts in a single forward pass, the tabular instance of the
-in-context learning paradigm popularized by large language models
-\cite{brown2020gpt3, dong2024icl}. Prototype and instance selection have a long
+\cite{hollmann2025tabpfn}, a prior-data fitted network \cite{muller2022pfn}: the
+model conditions on a chosen set of labeled rows (the context) and predicts in a
+single forward pass, the tabular instance of the in-context learning paradigm
+popularized by large language models \cite{brown2020gpt3, dong2024icl}. Prototype and instance selection have a long
 history in nearest-neighbor learning \cite{garcia2012prototype}, and
 sophisticated selection methods (clustering, coverage heuristics) have been
 proposed; yet it remains unclear whether their gains come from the selection
@@ -112,7 +112,7 @@ sampling them; for selection-method and stress tests we use three or more seeds.
 
 \begin{table}[h]
 \centering
-\caption{Datasets (all small; public OpenML).}
+\caption{Datasets (all small; public OpenML \cite{vanschoren2014openml}).}
 \label{tab:datasets}
 \begin{tabular}{lrrr}
 \toprule
@@ -166,7 +166,7 @@ These are standard geometric coverage measures---mean pairwise distance
 summarizes spread, and the covariance log-determinant is the standard volume of
 the region a point set occupies (it appears, for example, in determinantal point
 processes \cite{kulesza2012dpp} and coreset constructions
-\cite{feldman2020coresets}). The two families can vary independently, and
+\cite{feldman2020coresets, sener2018coreset}). The two families can vary independently, and
 separating them is the crux of H2.
 
 \section{H1: Context Stability}
@@ -677,27 +677,35 @@ scripts, analysis scripts, and figure-generation pipeline are available at:
 
 The raw outputs of every experiment are stored under
 \texttt{experiments/results/}, including
-\texttt{exp14\_context\_sampling\_*.json},
-\texttt{exp15\_controlled\_*.json}, and
-\texttt{exp16\_disentangle\_*.json}. All tables and figures in this paper are
-generated directly from these result files using the provided analysis scripts
-(\texttt{analyze\_exp14.py}, \texttt{analyze\_exp15.py},
-\texttt{analyze\_exp16.py}, \texttt{mixed\_effects\_exp16.py}, and
-\texttt{generate\_paper2\_figures.py}), ensuring that every reported number is
-derived automatically from the logged experiment outputs.
+\texttt{exp14\_\allowbreak context\_\allowbreak sampling\_\allowbreak*.json},
+\texttt{exp15\_\allowbreak controlled\_\allowbreak*.json}, and
+\texttt{exp16\_\allowbreak disentangle\_\allowbreak*.json}. All tables and
+figures in this paper are generated directly from these result files using the
+provided analysis scripts
+(\texttt{analyze\_\allowbreak exp14.py}, \texttt{analyze\_\allowbreak exp15.py},
+\texttt{analyze\_\allowbreak exp16.py},
+\texttt{mixed\_\allowbreak effects\_\allowbreak exp16.py}, and
+\texttt{generate\_\allowbreak paper2\_\allowbreak figures.py}), ensuring that
+every reported number is derived automatically from the logged experiment
+outputs.
 
 All datasets are publicly available through OpenML. Dataset identifiers,
 random seeds, train/test splits, and experiment configurations are recorded in
 the result files. Experiments were performed using TabPFN v3 on an NVIDIA RTX
 4060 GPU.
 
-\begin{thebibliography}{10}
+\begin{thebibliography}{13}
 
 \bibitem{hollmann2025tabpfn}
 Hollmann, N., Müller, S., Purucker, L., Krishnakumar, A., Körfer, M.,
 Hoo, S.~B., Schirrmeister, R.~T., \& Hutter, F. (2025).
 Accurate predictions on small data with a tabular foundation model.
 \textit{Nature}, 637(8045), 319--326. DOI: 10.1038/s41586-024-08328-6.
+
+\bibitem{muller2022pfn}
+Müller, S., Hollmann, N., Pineda Arango, S., Grabocka, J., \& Hutter, F. (2022).
+Transformers can do Bayesian inference.
+In \textit{International Conference on Learning Representations (ICLR)}.
 
 \bibitem{brown2020gpt3}
 Brown, T.~B., Mann, B., Ryder, N., Subbiah, M., et al. (2020).
@@ -739,6 +747,11 @@ Feldman, D. (2020).
 Introduction to core-sets: an updated survey.
 \textit{arXiv preprint arXiv:2011.09384}.
 
+\bibitem{sener2018coreset}
+Sener, O., \& Savarese, S. (2018).
+Active learning for convolutional neural networks: a core-set approach.
+In \textit{International Conference on Learning Representations (ICLR)}.
+
 \bibitem{settles2009active}
 Settles, B. (2009).
 Active learning literature survey.
@@ -748,6 +761,11 @@ Computer Sciences Technical Report 1648, University of Wisconsin--Madison.
 Bates, D., Mächler, M., Bolker, B., \& Walker, S. (2015).
 Fitting linear mixed-effects models using lme4.
 \textit{Journal of Statistical Software}, 67(1), 1--48.
+
+\bibitem{vanschoren2014openml}
+Vanschoren, J., van Rijn, J.~N., Bischl, B., \& Torgo, L. (2013).
+OpenML: networked science in machine learning.
+\textit{ACM SIGKDD Explorations Newsletter}, 15(2), 49--60.
 
 \end{thebibliography}
 
