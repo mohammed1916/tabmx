@@ -104,4 +104,50 @@ plt.savefig(FIG / "p2_fig3_selection.pdf", dpi=300, bbox_inches='tight')
 plt.savefig(FIG / "p2_fig3_selection.png", dpi=300, bbox_inches='tight')
 print("Saved p2_fig3_selection")
 
+# ---------------------------------------------------------------------------
+# Figure 4: H2 disentangling -- diversity, not shift, predicts AUC.
+# Left: AUC vs diversity (all exp16 contexts, colored by dataset).
+# Right: partial correlations per dataset (div|shift vs shift|div).
+# ---------------------------------------------------------------------------
+EXP16 = ROOT.parent.parent / "experiments" / "results" / "exp16_disentangle_20260724_120025.json"
+EXP16S = ROOT.parent.parent / "experiments" / "results" / "exp16_analysis_summary.json"
+if EXP16.exists() and EXP16S.exists():
+    recs = [r for r in json.loads(EXP16.read_text()) if r.get("status") == "OK"]
+    s16 = json.loads(EXP16S.read_text())
+    dsets = sorted({r["dataset"] for r in recs})
+    dcol = plt.cm.tab10(np.linspace(0, 1, len(dsets)))
+    fig, (axL, axR) = plt.subplots(1, 2, figsize=(13, 5))
+    # left: within-dataset z-scored AUC vs z-scored diversity (pooled scatter)
+    for ds, c in zip(dsets, dcol):
+        rs = [r for r in recs if r["dataset"] == ds]
+        dv = np.array([r["diversity"] for r in rs]); au = np.array([r["auc"] for r in rs])
+        if np.std(dv) > 0 and np.std(au) > 0:
+            axL.scatter((dv - dv.mean()) / dv.std(), (au - au.mean()) / au.std(),
+                        s=22, color=c, alpha=0.7, label=ds)
+    axL.set_xlabel('context diversity (z-scored)', fontweight='bold')
+    axL.set_ylabel('AUC (z-scored within dataset)', fontweight='bold')
+    axL.set_title('More diverse context -> higher AUC', fontweight='bold')
+    axL.grid(True, alpha=0.3); axL.legend(fontsize=8)
+    # right: partial correlations per dataset
+    pd_ = s16["per_dataset"]
+    ds2 = sorted(pd_.keys())
+    x = np.arange(len(ds2)); w = 0.38
+    axR.bar(x - w/2, [pd_[d]["partial_div_given_shift"] for d in ds2], w,
+            label='diversity | shift', color='#2ca02c')
+    axR.bar(x + w/2, [pd_[d]["partial_shift_given_div"] for d in ds2], w,
+            label='shift | diversity', color='#d62728')
+    axR.axhline(0, color='k', lw=0.8)
+    axR.set_xticks(x); axR.set_xticklabels(ds2, rotation=30, ha='right', fontsize=8)
+    axR.set_ylabel('partial correlation with AUC', fontweight='bold')
+    axR.set_title('Diversity survives; shift does not', fontweight='bold')
+    axR.legend(fontsize=9); axR.grid(True, alpha=0.3, axis='y')
+    fig.suptitle('H2 corrected: diversity/coverage drives accuracy, not representativeness',
+                 fontsize=13, fontweight='bold')
+    plt.tight_layout()
+    plt.savefig(FIG / "p2_fig4_disentangle.pdf", dpi=300, bbox_inches='tight')
+    plt.savefig(FIG / "p2_fig4_disentangle.png", dpi=300, bbox_inches='tight')
+    print("Saved p2_fig4_disentangle")
+else:
+    print("exp16 results not found; skipping fig4")
+
 print("Done.")

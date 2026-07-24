@@ -2687,6 +2687,31 @@ unchanged: diversity methods don't beat random enough to justify their cost.
 
 This is an honest negative that SHARPENS the paper rather than weakening it.
 
+### GPU enabled + controlled/disentangling experiments (2026-07-24)
+
+GPU fixed: machine HAS an RTX 4060; the block was a CPU-only torch build.
+Installed torch 2.5.1+cu121. exp15/exp16 ran on GPU.
+
+**exp15 (controlled representativeness) REFUTED naive H2:** forcing low
+feature-mean shift collapses AUC (Cohen's d high-vs-low up to -22.6, wrong
+direction; diabetes 0.49, blood-transfusion 0.39). But that construction also
+collapsed diversity -> confounded.
+
+**exp16 (disentangling) identified the real driver = DIVERSITY/COVERAGE:**
+6 methods spanning the (mean_shift, diversity) plane; partial correlations.
+Pooled z-scored: diversity|shift = +0.43 (beta +0.47) strong; shift|diversity =
+-0.08 (beta -0.07) collapses to ~0. Per-dataset: div|shift positive on all 6;
+shift|div near-zero/negative on 4/6. logdet_cov coverage correlates strongly too.
+
+**Paper 2 H2 REWRITTEN** around this: representativeness correlation is real but
+confounded/non-causal; diversity/coverage is what a small-data context needs.
+Framed with "appears to be" (controlled association, not randomized intervention).
+This is now the paper's strongest, most novel result. New fig p2_fig4_disentangle.
+Results: exp15_analysis_summary.json, exp16_analysis_summary.json.
+
+Also from exp15 (clean): kmeans/fps rise smoothly across all k (no reversal);
+prediction agreement 0.85-0.99; oracle gain 0.5-7.3% (largest on noisy datasets).
+
 ### Paper folder structure (2026-07-23)
 
 publications/paper1/ (broad report) and publications/paper2/ (small-data H1/H2/H3),
