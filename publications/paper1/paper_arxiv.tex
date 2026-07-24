@@ -45,9 +45,10 @@ tabular learning, empirical study
 
 \section{Introduction}
 
-TabPFN classifies test rows by attending over a set of labeled training rows
-supplied as context. The number of context rows ($k$) and the way they are
-selected are the two knobs a practitioner controls at inference time. This
+TabPFN \cite{hollmann2025tabpfn} classifies test rows by attending over a set of
+labeled training rows supplied as context. The number of context rows ($k$) and
+the way they are selected are the two knobs a practitioner controls at inference
+time. This
 report documents a series of small experiments probing those two knobs. It is
 an empirical log, not a theory paper: every number below is read directly from
 an experiment output file, and we avoid claims that go beyond the data we
@@ -71,7 +72,8 @@ because it differed between experiments and affects timing.
 \section{Observation 1: Full-Context Accuracy vs. Training-Set Size}
 
 We measured full-context TabPFN, a fixed-$k{=}512$ prototype variant, and a
-tuned LightGBM baseline as the training set grows, on two datasets
+tuned LightGBM \cite{ke2017lightgbm} baseline as the training set grows, on two
+datasets
 (bank-marketing, adult), single seed, on CPU.
 
 \begin{table}[h]
@@ -201,9 +203,10 @@ result.
 \section{Observation 3: Prototype Selection Method}
 
 We compared prototype-selection strategies at a fixed $k$. Two datasets
-(diabetes, vehicle) were tested across random, K-Means, farthest-point sampling
-(FPS), and class-balanced K-Means at $k{=}512$ (three seeds, CPU). We also ran
-random vs.\ K-Means at $k{=}2048$ on electricity.
+(diabetes, vehicle) were tested across random, K-Means (k-means++ seeding
+\cite{arthur2007kmeans}), farthest-point sampling (FPS), and class-balanced
+K-Means at $k{=}512$ (three seeds, CPU). We also ran random vs.\ K-Means at
+$k{=}2048$ on electricity.
 
 \begin{table}[h]
 \centering
@@ -376,15 +379,23 @@ and devices are recorded per experiment.
 
 \begin{thebibliography}{9}
 
-\bibitem{hollmann2024tabpfn}
-Hollmann, N., Müller, S., Eggensperger, K., \& Hutter, F. (2024).
+\bibitem{hollmann2025tabpfn}
+Hollmann, N., Müller, S., Purucker, L., Krishnakumar, A., Körfer, M.,
+Hoo, S.~B., Schirrmeister, R.~T., \& Hutter, F. (2025).
 Accurate predictions on small data with a tabular foundation model.
-\textit{Nature}.
+\textit{Nature}, 637(8045), 319--326. DOI: 10.1038/s41586-024-08328-6.
+
+\bibitem{ke2017lightgbm}
+Ke, G., Meng, Q., Finley, T., Wang, T., Chen, W., Ma, W., Ye, Q., \& Liu, T.-Y.
+(2017). LightGBM: a highly efficient gradient boosting decision tree.
+\textit{Advances in Neural Information Processing Systems (NeurIPS)}, 30,
+3149--3157.
 
 \bibitem{arthur2007kmeans}
 Arthur, D., \& Vassilvitskii, S. (2007).
-k-means++: The advantages of careful seeding.
-\textit{Proc.\ ACM-SIAM SODA}.
+k-means++: the advantages of careful seeding.
+In \textit{Proceedings of the 18th Annual ACM--SIAM Symposium on Discrete
+Algorithms (SODA)}, 1027--1035.
 
 \end{thebibliography}
 

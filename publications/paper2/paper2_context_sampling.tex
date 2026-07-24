@@ -58,12 +58,16 @@ diversity, coverage, context stability, small data
 
 \section{Introduction}
 
-Prototype selection is a fundamental inference-time decision in TabPFN: the
-model conditions on a chosen set of labeled rows (the context) and predicts in a
-single forward pass. Sophisticated selection methods (clustering, coverage
-heuristics) have been proposed, yet it remains unclear whether their gains come
-from the selection \emph{algorithm} or simply from selecting a subset that is
-representative of the training data. We investigate this on small tabular
+Prototype selection is a fundamental inference-time decision in TabPFN
+\cite{hollmann2025tabpfn}: the model conditions on a chosen set of labeled rows
+(the context) and predicts in a single forward pass, the tabular instance of the
+in-context learning paradigm popularized by large language models
+\cite{brown2020gpt3, dong2024icl}. Prototype and instance selection have a long
+history in nearest-neighbor learning \cite{garcia2012prototype}, and
+sophisticated selection methods (clustering, coverage heuristics) have been
+proposed; yet it remains unclear whether their gains come from the selection
+\emph{algorithm} or simply from selecting a subset that is representative of the
+training data. We investigate this on small tabular
 datasets---the regime TabPFN targets---where we can afford many repeated draws
 and isolate the effect of the context from confounds of scale.
 
@@ -144,8 +148,9 @@ distance among context rows, and the log-determinant of the context covariance
 (a volume). These are standard geometric coverage measures---mean pairwise
 distance summarizes spread, and the covariance log-determinant is the standard
 volume of the region a point set occupies (it appears, for example, in
-D-optimal experimental design and determinantal point processes). These two
-families can vary independently, and separating them is the crux of H2.
+determinantal point processes \cite{kulesza2012dpp} and coreset constructions
+\cite{feldman2020coresets}). These two families can vary independently, and
+separating them is the crux of H2.
 
 \section{H1: Context Stability}
 
@@ -452,8 +457,8 @@ marginal feature distribution. This also explains the cross-method observation
 that K-Means and FPS---which are far from distribution-preserving but cover the
 space well---match or beat random (H3): they succeed through diversity, the factor
 that matters, not through representativeness, the factor that does not. \textbf{Formal inference.} To test this with proper accounting for dataset-level
-variation, we fit a linear mixed-effects model over all 945 constructed contexts
-from the 15 datasets,
+variation, we fit a linear mixed-effects model \cite{bates2015lme4} over all 945
+constructed contexts from the 15 datasets,
 \[
 \text{AUC} \sim \text{diversity} + \text{shift} + (1\mid\text{dataset}),
 \]
@@ -490,8 +495,10 @@ aggregate (pooled and mixed-effects) diversity is the factor that survives.}
 \section{H3: Selection Cost}
 
 At a fixed budget of $k{=}128$ we compared uniform random selection against
-K-Means (nearest training point to each centroid) and farthest-point sampling
-(FPS), three seeds each. Table~\ref{tab:selection} reports mean AUC and the mean
+K-Means (nearest training point to each centroid, using k-means++ seeding
+\cite{arthur2007kmeans}) and farthest-point sampling
+(FPS, the classic 2-approximation to $k$-center \cite{gonzalez1985clustering}),
+three seeds each. Table~\ref{tab:selection} reports mean AUC and the mean
 time to \emph{choose} the prototypes (separate from inference).
 
 \begin{table}[h]
@@ -634,7 +641,9 @@ having AUC headroom.
 \item \textbf{Model.} A single model (TabPFN v3). Whether the same context
 behavior holds for other in-context tabular learners is untested.
 \item \textbf{Selection algorithms.} We compare three (random, K-Means, FPS); a
-method specifically optimized for context quality could behave differently.
+method specifically optimized for context quality---for instance an
+active-learning-style informativeness criterion \cite{settles2009active}---could
+behave differently.
 \item \textbf{Representativeness metrics.} Two coarse distances (class-TV,
 feature-mean shift); richer divergences (e.g.\ MMD, per-feature KL) might explain
 more and are future work.
@@ -652,11 +661,64 @@ under \texttt{experiments/results/}. The mixed-effects model is fit by
 \texttt{mixed\_effects\_exp16.py}. Datasets are public OpenML tasks; split seed
 and per-block seeds are recorded. Runs used an NVIDIA RTX 4060 GPU.
 
-\begin{thebibliography}{9}
-\bibitem{hollmann2024tabpfn}
-Hollmann, N., Müller, S., Eggensperger, K., \& Hutter, F. (2024).
+\begin{thebibliography}{10}
+
+\bibitem{hollmann2025tabpfn}
+Hollmann, N., Müller, S., Purucker, L., Krishnakumar, A., Körfer, M.,
+Hoo, S.~B., Schirrmeister, R.~T., \& Hutter, F. (2025).
 Accurate predictions on small data with a tabular foundation model.
-\textit{Nature}.
+\textit{Nature}, 637(8045), 319--326. DOI: 10.1038/s41586-024-08328-6.
+
+\bibitem{brown2020gpt3}
+Brown, T.~B., Mann, B., Ryder, N., Subbiah, M., et al. (2020).
+Language models are few-shot learners.
+\textit{Advances in Neural Information Processing Systems (NeurIPS)}, 33,
+1877--1901.
+
+\bibitem{dong2024icl}
+Dong, Q., Li, L., Dai, D., Zheng, C., et al. (2024).
+A survey on in-context learning.
+In \textit{Proceedings of the 2024 Conference on Empirical Methods in Natural
+Language Processing (EMNLP)}.
+
+\bibitem{garcia2012prototype}
+García, S., Derrac, J., Cano, J.~R., \& Herrera, F. (2012).
+Prototype selection for nearest neighbor classification: taxonomy and empirical
+study.
+\textit{IEEE Transactions on Pattern Analysis and Machine Intelligence},
+34(3), 417--435.
+
+\bibitem{arthur2007kmeans}
+Arthur, D., \& Vassilvitskii, S. (2007).
+k-means++: the advantages of careful seeding.
+In \textit{Proceedings of the 18th Annual ACM--SIAM Symposium on Discrete
+Algorithms (SODA)}, 1027--1035.
+
+\bibitem{gonzalez1985clustering}
+Gonzalez, T.~F. (1985).
+Clustering to minimize the maximum intercluster distance.
+\textit{Theoretical Computer Science}, 38, 293--306.
+
+\bibitem{kulesza2012dpp}
+Kulesza, A., \& Taskar, B. (2012).
+Determinantal point processes for machine learning.
+\textit{Foundations and Trends in Machine Learning}, 5(2--3), 123--286.
+
+\bibitem{feldman2020coresets}
+Feldman, D. (2020).
+Introduction to core-sets: an updated survey.
+\textit{arXiv preprint arXiv:2011.09384}.
+
+\bibitem{settles2009active}
+Settles, B. (2009).
+Active learning literature survey.
+Computer Sciences Technical Report 1648, University of Wisconsin--Madison.
+
+\bibitem{bates2015lme4}
+Bates, D., Mächler, M., Bolker, B., \& Walker, S. (2015).
+Fitting linear mixed-effects models using lme4.
+\textit{Journal of Statistical Software}, 67(1), 1--48.
+
 \end{thebibliography}
 
 \end{document}
