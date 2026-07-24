@@ -137,19 +137,36 @@ kc1                & 2109 & 21 & 2 \\
 \end{tabular}
 \end{table}
 
-\textbf{Context descriptors.} We characterize a context with two families of
-measures on standardized features. \emph{Representativeness} (how close to the
-full distribution): the total-variation distance between the context's and the
-full class distribution (\texttt{class\_tv}), and the mean absolute difference
-between the context's per-feature means and the full training means
-(\texttt{feat\_shift})---smaller means more representative. \emph{Diversity /
-coverage} (how much of the space the context spans): the mean pairwise Euclidean
-distance among context rows, and the log-determinant of the context covariance
-(a volume). These are standard geometric coverage measures---mean pairwise
-distance summarizes spread, and the covariance log-determinant is the standard
-volume of the region a point set occupies (it appears, for example, in
-determinantal point processes \cite{kulesza2012dpp} and coreset constructions
-\cite{feldman2020coresets}). These two families can vary independently, and
+\textbf{Context descriptors.} Let the full training set have standardized
+feature matrix $X\in\mathbb{R}^{n\times m}$ with column means $\bar{X}$, and let
+a context $C$ of size $k$ have feature rows $\{x_i\}_{i\in C}$ with mean
+$\bar{X}_C$. We characterize $C$ with two families of measures.
+
+\emph{Representativeness} (how close to the full distribution): the
+total-variation distance between the context's class distribution $p_C$ and the
+full class distribution $p$, and the mean absolute per-feature mean shift,
+\begin{equation}
+\texttt{class\_tv} = \tfrac{1}{2}\sum_{c} \lvert p_c - p_{C,c}\rvert,
+\qquad
+\texttt{feat\_shift} = \frac{1}{m}\sum_{j=1}^{m}
+\bigl\lvert \bar{X}_{C,j} - \bar{X}_{j}\bigr\rvert .
+\end{equation}
+Smaller values mean $C$ looks more like the whole training set.
+
+\emph{Diversity / coverage} (how much of the space $C$ spans): the mean pairwise
+Euclidean distance among context rows and the log-determinant of the context
+covariance $\Sigma_C$ (a volume),
+\begin{equation}
+\texttt{diversity} = \frac{1}{\lvert C\rvert^2}\sum_{i,i'\in C}
+\lVert x_i - x_{i'}\rVert_2,
+\qquad
+\texttt{logdet\_cov} = \log\det\!\bigl(\Sigma_C + \varepsilon I\bigr).
+\end{equation}
+These are standard geometric coverage measures---mean pairwise distance
+summarizes spread, and the covariance log-determinant is the standard volume of
+the region a point set occupies (it appears, for example, in determinantal point
+processes \cite{kulesza2012dpp} and coreset constructions
+\cite{feldman2020coresets}). The two families can vary independently, and
 separating them is the crux of H2.
 
 \section{H1: Context Stability}
