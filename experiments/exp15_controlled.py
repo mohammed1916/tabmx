@@ -55,6 +55,9 @@ TEST_SIZE = 0.2
 DATASETS = [
     (37, "diabetes"), (31, "credit-g"), (54, "vehicle"),
     (1510, "wdbc"), (15, "breast-w"), (1464, "blood-transfusion"),
+    (59, "ionosphere"), (40, "sonar"), (41, "glass"), (40981, "australian"),
+    (53, "heart-statlog"), (40984, "segment"), (60, "waveform-5000"),
+    (44, "spambase"), (1067, "kc1"),
 ]
 
 K_ALL = [16, 32, 64, 128, 256]

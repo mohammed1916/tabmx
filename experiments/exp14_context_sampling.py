@@ -55,6 +55,15 @@ DATASETS = [
     (1510, "wdbc"),       # 569 rows,  30 feat, 2 cls
     (15, "breast-w"),     # 699 rows,  9 feat, 2 cls
     (1464, "blood-transfusion"),  # 748 rows, 4 feat, 2 cls
+    (59, "ionosphere"),   # 351 rows,  34 feat, 2 cls
+    (40, "sonar"),        # 208 rows,  60 feat, 2 cls
+    (41, "glass"),        # 214 rows,  9 feat, 6 cls
+    (40981, "australian"),# 690 rows,  14 feat, 2 cls
+    (53, "heart-statlog"),# 270 rows,  13 feat, 2 cls
+    (40984, "segment"),   # 2310 rows, 18 feat, 7 cls
+    (60, "waveform-5000"),# 5000 rows, 40 feat, 3 cls
+    (44, "spambase"),     # 4601 rows, 57 feat, 2 cls
+    (1067, "kc1"),        # 2109 rows, 21 feat, 2 cls
 ]
 
 # k values for stability/representativeness sweeps (small-data range).

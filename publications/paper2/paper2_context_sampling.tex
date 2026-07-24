@@ -41,12 +41,12 @@ We find that larger contexts are both more accurate and markedly more stable
 under 2\% at $k{=}256$ on the datasets with room to improve). Accuracy does
 correlate with how well a random context preserves the training distribution,
 but a controlled experiment overturns the causal reading: when we construct
-contexts that match the feature means closely, accuracy \emph{collapses} (by up
-to 0.5 AUC), because that construction also destroys diversity. Disentangling
-the two shows diversity/coverage is the factor that predicts accuracy: in a
-mixed-effects model over constructed contexts, diversity is highly significant
-($\beta=+0.47$, $p=3\times10^{-20}$) while feature-mean shift is not
-($\beta=-0.07$, $p=0.14$) once diversity is included. This also explains why K-Means and farthest-point
+contexts that match the feature means closely, accuracy drops substantially (by
+up to 0.5 AUC), because that construction also destroys diversity. Controlled
+experiments and mixed-effects analysis identify diversity/coverage---not
+feature-mean matching---as the factor that predicts accuracy (diversity
+$\beta=+0.47$, $p=3\times10^{-20}$; feature-mean shift $\beta=-0.07$, $p=0.14$
+once diversity is included). This also explains why K-Means and farthest-point
 selection---diverse but not distribution-preserving---match uniform random while
 costing two to three orders of magnitude more. Random sampling works because it
 covers the feature space in expectation, not because it matches its
@@ -132,8 +132,11 @@ between the context's per-feature means and the full training means
 (\texttt{feat\_shift})---smaller means more representative. \emph{Diversity /
 coverage} (how much of the space the context spans): the mean pairwise Euclidean
 distance among context rows, and the log-determinant of the context covariance
-(a volume). These two families can vary independently, and separating them is
-the crux of H2.
+(a volume). These are standard geometric coverage measures---mean pairwise
+distance summarizes spread, and the covariance log-determinant is the standard
+volume of the region a point set occupies (it appears, for example, in
+D-optimal experimental design and determinantal point processes). These two
+families can vary independently, and separating them is the crux of H2.
 
 \section{H1: Context Stability}
 
@@ -273,22 +276,24 @@ waiting for random draws to vary: a greedy procedure that adds rows to keep the
 running feature-mean as close as possible to the full-data mean (``high''
 representativeness, very low \texttt{feat\_shift}), a uniform ``random''
 baseline, and a farthest-from-centroid procedure (``low'' representativeness,
-high \texttt{feat\_shift}), all with the class ratio matched. If representativeness
-caused accuracy, the low-shift contexts should score highest.
+high \texttt{feat\_shift}), all with the class ratio matched. These constructed
+contexts are designed to isolate causal factors, not to model practical sampling
+strategies; their purpose is to move one geometric property at a time. If
+representativeness caused accuracy, the low-shift contexts should score highest.
 
 The opposite happens (Table~\ref{tab:controlled}). Forcing low
-\texttt{feat\_shift} \emph{collapses} accuracy---to 0.49 on diabetes and 0.39 on
-blood-transfusion, far below random---while the high-shift contexts are as good
-as or better than random. The high-vs-low effect is large and points the wrong
-way for H2 (Cohen's $d$ up to $-22.6$, Cliff's $\delta=-1.0$ on four datasets).
-So matching the marginal feature means does not cause good performance; when
-isolated, it hurts.
+\texttt{feat\_shift} reduces accuracy substantially---to 0.49 on diabetes and
+0.39 on blood-transfusion, far below random---while the high-shift contexts are
+as good as or better than random. The high-vs-low effect is large and runs
+contrary to the original hypothesis (Cohen's $d$ up to $-22.6$, Cliff's
+$\delta=-1.0$ on four datasets). So matching the marginal feature means does not
+cause good performance; when isolated, it degrades it.
 
 \begin{table}[h]
 \centering
 \caption{Controlled representativeness at $k{=}128$ (15 contexts each, mean ROC
-AUC $\pm$ 95\% CI). Forcing low feature-mean shift (``high repr.'') collapses
-accuracy; $d$ and $\delta$ are the high-vs-low effect sizes.}
+AUC $\pm$ 95\% CI). Forcing low feature-mean shift (``high repr.'') reduces
+accuracy substantially; $d$ and $\delta$ are the high-vs-low effect sizes.}
 \label{tab:controlled}
 \begin{tabular}{lrrrrr}
 \toprule
@@ -444,6 +449,13 @@ $\sim$0.27\,s for K-Means---roughly three orders of magnitude---and up to about 
 second on one dataset. Given near-equal accuracy, the extra machinery of K-Means
 or FPS bought little over drawing rows at random.
 
+This ties back to H2. K-Means and FPS already maximize context diversity---by
+spreading prototypes across clusters or across the feature space---which is
+exactly the factor H2 identifies as driving accuracy. They perform similarly to
+random not despite ignoring distribution matching, but because random already
+supplies comparable coverage in expectation. The methods differ mainly in cost,
+not in the property that matters.
+
 \section{Supporting: Redundancy and Robustness}
 
 Starting from a random context of $k{=}128$, we either duplicated a fraction of
@@ -474,7 +486,7 @@ better, and the controlled experiments give a sharper answer than the initial
 correlation suggested: what matters is the context's \emph{diversity / coverage}
 of the feature space, not how closely it matches the training distribution.
 Matching the marginals, when forced in isolation, actually hurts (because it
-collapses coverage); diversity is the factor that survives once the two are
+reduces coverage); diversity is the factor that survives once the two are
 separated. H3 then follows naturally: uniform random sampling covers the space
 well in expectation, so it already captures the factor that matters, and the
 more expensive selection methods---also diverse, but no more so in ways that
