@@ -63,7 +63,7 @@ ax2.bar(x - w/2, most, w, label='most representative third', color='#2ca02c')
 ax2.bar(x + w/2, least, w, label='least representative third', color='#d62728')
 ax2.set_xticks(x); ax2.set_xticklabels(ds2, rotation=30, ha='right', fontsize=8)
 ax2.set_ylabel('mean ROC AUC', fontweight='bold')
-ax2.set_title('Representative contexts do better (all 6)', fontweight='bold')
+ax2.set_title('Representative contexts do better (correlation)', fontweight='bold')
 ax2.legend(fontsize=9); ax2.grid(True, alpha=0.3, axis='y')
 fig.suptitle('H2: Accuracy tracks how well the context matches the full data', fontsize=13, fontweight='bold')
 plt.tight_layout()
@@ -109,7 +109,7 @@ print("Saved p2_fig3_selection")
 # Left: AUC vs diversity (all exp16 contexts, colored by dataset).
 # Right: partial correlations per dataset (div|shift vs shift|div).
 # ---------------------------------------------------------------------------
-EXP16 = ROOT.parent.parent / "experiments" / "results" / "exp16_disentangle_20260724_120025.json"
+EXP16 = ROOT.parent.parent / "experiments" / "results" / "exp16_disentangle_20260724_174706.json"
 EXP16S = ROOT.parent.parent / "experiments" / "results" / "exp16_analysis_summary.json"
 if EXP16.exists() and EXP16S.exists():
     recs = [r for r in json.loads(EXP16.read_text()) if r.get("status") == "OK"]

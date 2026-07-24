@@ -2712,6 +2712,30 @@ Results: exp15_analysis_summary.json, exp16_analysis_summary.json.
 Also from exp15 (clean): kmeans/fps rise smoothly across all k (no reversal);
 prediction agreement 0.85-0.99; oracle gain 0.5-7.3% (largest on noisy datasets).
 
+### Expanded to 15 datasets (2026-07-24)
+
+Added 9 datasets (ionosphere, sonar, glass, australian, heart-statlog, segment,
+waveform-5000, spambase, kc1) to exp14/15/16; all reran on GPU. Result files:
+exp14_..._125000, exp15_..._144554, exp16_..._174706. Paper 2 fully refreshed:
+all tables (H1 15 rows, controlled 15 rows, partial-corr 15 rows, selection 15
+rows), figures, CIs, and prose updated to 15-dataset numbers.
+
+**How the story held / changed on 15 datasets:**
+- H1 stability: holds on all 15 (CV falls with k everywhere).
+- H2 controlled test (exp15): REPLICATES strongly - forcing low shift reduces AUC
+  on 9/15, dramatically on spambase/waveform/kc1 + originals; Cliff delta=-1.0 on 6.
+- H2 disentangling (exp16): pooled diversity partial corr +0.22 (was +0.43 on 6),
+  shift -0.01. Per-dataset now MIXED (positive on 9/15, negative on a few). Mixed-
+  effects: diversity beta=+0.23 p=3e-12 (highly sig); shift beta=-0.01 p=0.71 (n.s.).
+  Random-slope now well-conditioned (15 groups, not singular). Effect smaller but
+  more reliable. Paper states it as "directionally dominant, not universal" and
+  leans on the controlled test + mixed-effects for the aggregate claim.
+- H3: random ~= kmeans ~= fps across all 15; random ~1000x cheaper. Holds.
+
+Compute limitation updated (GPU now, not CPU). Honest note: the diversity effect
+is weaker and less unanimous on 15 than the 6-dataset pilot suggested - reported
+truthfully, not spun.
+
 ### Paper folder structure (2026-07-23)
 
 publications/paper1/ (broad report) and publications/paper2/ (small-data H1/H2/H3),

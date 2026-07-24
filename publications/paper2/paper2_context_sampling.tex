@@ -30,22 +30,22 @@ training rows (the context, or prototypes) and predicts test labels without
 gradient updates. On small tabular datasets, where TabPFN is designed to be
 used, the practitioner still chooses how large that context is and which rows
 go into it. We ask how much those choices matter. Using repeated random
-sub-sampling on six small OpenML datasets, we study three linked questions:
+sub-sampling on 15 small OpenML datasets, we study three linked questions:
 (i) how variable predictions are across different random contexts of the same
 size, and whether larger contexts are more stable; (ii) whether accuracy tracks
 how well a sampled context preserves the full training distribution; and
 (iii) whether more expensive selection (K-Means, farthest-point sampling) buys
 anything over uniform random selection once the context is representative.
 We find that larger contexts are both more accurate and markedly more stable
-(the coefficient of variation of AUC falls from around 8--13\% at $k{=}16$ to
-under 2\% at $k{=}256$ on the datasets with room to improve). Accuracy does
+(the coefficient of variation of AUC falls from roughly 6--18\% at $k{=}16$ to
+1--4\% at the largest $k$ on the datasets with room to improve). Accuracy does
 correlate with how well a random context preserves the training distribution,
 but a controlled experiment overturns the causal reading: when we construct
 contexts that match the feature means closely, accuracy drops substantially (by
 up to 0.5 AUC), because that construction also destroys diversity. Controlled
 experiments and mixed-effects analysis identify diversity/coverage---not
 feature-mean matching---as the factor that predicts accuracy (diversity
-$\beta=+0.47$, $p=3\times10^{-20}$; feature-mean shift $\beta=-0.07$, $p=0.14$
+$\beta=+0.23$, $p=3\times10^{-12}$; feature-mean shift $\beta=-0.01$, $p=0.71$
 once diversity is included). This also explains why K-Means and farthest-point
 selection---diverse but not distribution-preserving---match uniform random while
 costing two to three orders of magnitude more. Random sampling works because it
@@ -67,7 +67,7 @@ representative of the training data. We investigate this on small tabular
 datasets---the regime TabPFN targets---where we can afford many repeated draws
 and isolate the effect of the context from confounds of scale.
 
-We study three connected questions, on six small OpenML datasets:
+We study three connected questions, on 15 small OpenML datasets:
 
 \begin{description}
 \item[H1 (Stability).] Different random contexts of the same size $k$ yield
@@ -120,6 +120,15 @@ vehicle            & 846  & 18 & 4 \\
 wdbc               & 569  & 30 & 2 \\
 breast-w           & 699  & 9  & 2 \\
 blood-transfusion  & 748  & 4  & 2 \\
+ionosphere         & 351  & 34 & 2 \\
+sonar              & 208  & 60 & 2 \\
+glass              & 214  & 9  & 6 \\
+australian         & 690  & 14 & 2 \\
+heart-statlog      & 270  & 13 & 2 \\
+segment            & 2310 & 18 & 7 \\
+waveform-5000      & 5000 & 40 & 3 \\
+spambase           & 4601 & 57 & 2 \\
+kc1                & 2109 & 21 & 2 \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -156,15 +165,27 @@ mean ROC AUC $\pm$ 95\% CI, with coefficient of variation
 \toprule
 Dataset & $k{=}16$ & $k{=}32$ & $k{=}64$ & $k{=}128$ & $k{=}256$ \\
 \midrule
-diabetes          & $0.738{\pm}.040$ (12.5\%) & $0.789{\pm}.035$ (10.0\%) & $0.836{\pm}.008$ (2.3\%) & $0.858{\pm}.007$ (1.8\%) & $0.871{\pm}.005$ (1.3\%) \\
-credit-g          & $0.648{\pm}.031$ (11.0\%) & $0.677{\pm}.028$ (9.4\%)  & $0.734{\pm}.020$ (6.3\%) & $0.775{\pm}.013$ (3.8\%) & $0.808{\pm}.008$ (2.1\%) \\
-vehicle           & $0.763{\pm}.026$ (7.7\%)  & $0.869{\pm}.007$ (2.0\%)  & $0.919{\pm}.008$ (2.0\%) & $0.946{\pm}.005$ (1.2\%) & $0.961{\pm}.002$ (0.5\%) \\
-wdbc              & $0.955{\pm}.024$ (5.8\%)  & $0.980{\pm}.004$ (0.8\%)  & $0.987{\pm}.004$ (0.9\%) & $0.990{\pm}.002$ (0.6\%) & $0.995{\pm}.001$ (0.2\%) \\
-breast-w          & $0.988{\pm}.003$ (0.6\%)  & $0.989{\pm}.003$ (0.8\%)  & $0.993{\pm}.002$ (0.4\%) & $0.993{\pm}.002$ (0.4\%) & $0.994{\pm}.001$ (0.2\%) \\
-blood-transfusion & $0.624{\pm}.035$ (12.8\%) & $0.648{\pm}.028$ (9.9\%)  & $0.670{\pm}.015$ (5.2\%) & $0.688{\pm}.011$ (3.6\%) & $0.698{\pm}.010$ (3.3\%) \\
+diabetes           & $.738{\pm}.042$ (12.9\%) & $.788{\pm}.034$ (9.7\%) & $.834{\pm}.008$ (2.1\%) & $.858{\pm}.006$ (1.7\%) & $.872{\pm}.005$ (1.3\%) \\
+credit-g           & $.648{\pm}.030$ (10.5\%) & $.678{\pm}.027$ (9.0\%) & $.734{\pm}.021$ (6.5\%) & $.774{\pm}.013$ (3.8\%) & $.808{\pm}.008$ (2.1\%) \\
+vehicle            & $.763{\pm}.022$ (6.5\%) & $.870{\pm}.007$ (1.9\%) & $.920{\pm}.008$ (2.1\%) & $.946{\pm}.005$ (1.1\%) & $.960{\pm}.002$ (0.5\%) \\
+wdbc               & $.955{\pm}.024$ (5.8\%) & $.980{\pm}.004$ (0.8\%) & $.987{\pm}.004$ (0.8\%) & $.990{\pm}.002$ (0.6\%) & $.995{\pm}.001$ (0.2\%) \\
+breast-w           & $.988{\pm}.003$ (0.6\%) & $.989{\pm}.003$ (0.8\%) & $.992{\pm}.002$ (0.4\%) & $.993{\pm}.002$ (0.4\%) & $.994{\pm}.001$ (0.2\%) \\
+blood-transfusion  & $.628{\pm}.033$ (11.9\%) & $.644{\pm}.027$ (9.5\%) & $.670{\pm}.015$ (5.2\%) & $.690{\pm}.012$ (4.0\%) & $.698{\pm}.011$ (3.5\%) \\
+ionosphere         & $.882{\pm}.035$ (8.9\%) & $.957{\pm}.010$ (2.3\%) & $.972{\pm}.004$ (1.0\%) & $.980{\pm}.002$ (0.5\%) & $.984{\pm}.001$ (0.3\%) \\
+sonar              & $.744{\pm}.036$ (11.0\%) & $.776{\pm}.032$ (9.3\%) & $.823{\pm}.016$ (4.5\%) & $.899{\pm}.008$ (1.9\%) & --- \\
+glass              & $.824{\pm}.080$ (8.6\%) & $.854{\pm}.018$ (4.6\%) & $.917{\pm}.013$ (3.3\%) & $.950{\pm}.005$ (1.3\%) & --- \\
+australian         & $.862{\pm}.029$ (7.7\%) & $.906{\pm}.007$ (1.8\%) & $.916{\pm}.006$ (1.4\%) & $.923{\pm}.005$ (1.3\%) & $.932{\pm}.004$ (1.0\%) \\
+heart-statlog      & $.824{\pm}.026$ (7.1\%) & $.847{\pm}.018$ (4.7\%) & $.854{\pm}.015$ (4.0\%) & $.869{\pm}.006$ (1.5\%) & --- \\
+segment            & $.950{\pm}.010$ (1.5\%) & $.980{\pm}.004$ (1.0\%) & $.991{\pm}.001$ (0.2\%) & $.994{\pm}.001$ (0.1\%) & $.996{\pm}.001$ (0.1\%) \\
+waveform-5000      & $.829{\pm}.023$ (6.2\%) & $.891{\pm}.019$ (4.9\%) & $.945{\pm}.005$ (1.3\%) & $.962{\pm}.002$ (0.5\%) & $.969{\pm}.001$ (0.3\%) \\
+spambase           & $.913{\pm}.012$ (2.9\%) & $.945{\pm}.008$ (2.0\%) & $.966{\pm}.003$ (0.7\%) & $.976{\pm}.001$ (0.3\%) & $.981{\pm}.001$ (0.3\%) \\
+kc1                & $.709{\pm}.058$ (17.8\%) & $.746{\pm}.029$ (8.9\%) & $.778{\pm}.017$ (5.0\%) & $.796{\pm}.014$ (4.0\%) & $.816{\pm}.007$ (1.9\%) \\
 \bottomrule
 \end{tabular}
 \end{table}
+
+\noindent(Dashes: $k{=}256$ exceeds the training-set size on the smallest
+datasets, so that context is not evaluated.)
 
 \begin{figure}[h]
 \centering
@@ -174,17 +195,16 @@ variation across 20 random draws (right) falls with $k$ on every dataset.}
 \label{fig:stability}
 \end{figure}
 
-\textbf{What we observe.} On every dataset, variability across random contexts
-falls as $k$ grows. On the four datasets with room to improve (diabetes,
-credit-g, vehicle, blood-transfusion) the CV drops from roughly 8--13\% at
-$k{=}16$ to about 1--3\% at $k{=}256$; on the two already near ceiling
-(breast-w, wdbc) it is small throughout and still shrinks. Mean AUC rises with
-$k$ in parallel. So on small data the context size is not only an
-accuracy knob but a \emph{reliability} knob: a small context makes the model's
-answer depend heavily on which rows happened to be drawn, and enlarging the
-context removes most of that dependence. The single most variable configuration
-we saw was diabetes at $k{=}16$, where AUC over 20 draws ranged from 0.497 to
-0.842.
+\textbf{What we observe.} On every one of the 15 datasets, variability across
+random contexts falls as $k$ grows. On datasets with accuracy headroom
+(diabetes, credit-g, sonar, kc1, waveform, and others) the CV drops from roughly
+6--18\% at $k{=}16$ to about 1--4\% at the largest $k$; datasets already near
+ceiling (breast-w, segment) start low and still shrink. Mean AUC rises with $k$
+in parallel. So on small data the context size is not only an accuracy knob but a
+\emph{reliability} knob: a small context makes the model's answer depend heavily
+on which rows happened to be drawn, and enlarging the context removes most of
+that dependence. The most variable configuration we saw was kc1 at $k{=}16$
+(CV $17.8\%$); at $k{=}16$ diabetes AUC over 20 draws ranged from 0.503 to 0.839.
 
 \section{H2: What makes a context good---representativeness or diversity?}
 
@@ -215,14 +235,23 @@ full distribution scores lower, as hypothesized.}
 \cmidrule(lr){2-4}\cmidrule(lr){5-7}
 Dataset & Pearson & Spearman & $R^2$ & Pearson & Spearman & $R^2$ \\
 \midrule
-credit-g          & $-0.52$ & $-0.43$ & 0.27 & $-0.79$ & $-0.83$ & 0.62 \\
-vehicle           & $-0.70$ & $-0.78$ & 0.50 & $-0.77$ & $-0.78$ & 0.59 \\
-diabetes          & $-0.31$ & $-0.44$ & 0.10 & $-0.55$ & $-0.73$ & 0.30 \\
-wdbc              & $-0.24$ & $-0.36$ & 0.06 & $-0.39$ & $-0.59$ & 0.15 \\
-breast-w          & $-0.20$ & $-0.17$ & 0.04 & $-0.19$ & $-0.29$ & 0.04 \\
-blood-transfusion & $-0.02$ & $-0.16$ & 0.00 & $-0.31$ & $-0.26$ & 0.10 \\
+diabetes           & $-0.31$ & $-0.45$ & 0.10 & $-0.52$ & $-0.73$ & 0.27 \\
+credit-g           & $-0.53$ & $-0.43$ & 0.28 & $-0.80$ & $-0.83$ & 0.63 \\
+vehicle            & $-0.71$ & $-0.78$ & 0.51 & $-0.79$ & $-0.78$ & 0.63 \\
+wdbc               & $-0.24$ & $-0.35$ & 0.06 & $-0.39$ & $-0.59$ & 0.15 \\
+breast-w           & $-0.18$ & $-0.16$ & 0.03 & $-0.18$ & $-0.27$ & 0.03 \\
+blood-transfusion  & $-0.08$ & $-0.18$ & 0.01 & $-0.31$ & $-0.27$ & 0.09 \\
+ionosphere         & $-0.26$ & $-0.51$ & 0.07 & $-0.63$ & $-0.84$ & 0.39 \\
+sonar              & $-0.53$ & $-0.54$ & 0.28 & $-0.60$ & $-0.66$ & 0.36 \\
+glass              & $-0.57$ & $-0.63$ & 0.33 & $-0.56$ & $-0.69$ & 0.32 \\
+australian         & $-0.34$ & $-0.26$ & 0.11 & $-0.57$ & $-0.68$ & 0.32 \\
+heart-statlog      & $-0.07$ & $-0.23$ & 0.01 & $-0.30$ & $-0.26$ & 0.09 \\
+segment            & $-0.77$ & $-0.84$ & 0.59 & $-0.74$ & $-0.82$ & 0.55 \\
+waveform-5000      & $-0.71$ & $-0.80$ & 0.51 & $-0.83$ & $-0.92$ & 0.68 \\
+spambase           & $-0.39$ & $-0.49$ & 0.15 & $-0.78$ & $-0.89$ & 0.60 \\
+kc1                & $-0.08$ & $-0.27$ & 0.01 & $-0.29$ & $-0.38$ & 0.08 \\
 \midrule
-pooled (z-scored) & $-0.33$ & $-0.41$ & 0.11 & $-0.50$ & $-0.59$ & 0.25 \\
+pooled (z-scored)  & $-0.38$ & $-0.46$ & 0.14 & $-0.55$ & $-0.64$ & 0.31 \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -230,7 +259,7 @@ pooled (z-scored) & $-0.33$ & $-0.41$ & 0.11 & $-0.50$ & $-0.59$ & 0.25 \\
 \begin{table}[h]
 \centering
 \caption{Mean AUC of the most- vs.\ least-representative third of random draws,
-split by \texttt{class\_tv}. The most-representative third wins on all six
+split by \texttt{class\_tv}. The most-representative third wins on all 15
 datasets.}
 \label{tab:contrast}
 \begin{tabular}{lrrr}
@@ -238,10 +267,12 @@ datasets.}
 Dataset & most repr. & least repr. & $\Delta$ \\
 \midrule
 vehicle           & 0.953 & 0.825 & $+0.127$ \\
-credit-g          & 0.751 & 0.677 & $+0.074$ \\
-diabetes          & 0.852 & 0.792 & $+0.060$ \\
-blood-transfusion & 0.671 & 0.649 & $+0.022$ \\
-wdbc              & 0.987 & 0.968 & $+0.019$ \\
+sonar             & 0.858 & 0.746 & $+0.112$ \\
+waveform-5000     & 0.956 & 0.867 & $+0.088$ \\
+glass             & 0.942 & 0.864 & $+0.077$ \\
+credit-g          & 0.752 & 0.678 & $+0.074$ \\
+diabetes          & 0.851 & 0.791 & $+0.060$ \\
+\multicolumn{4}{l}{\textit{\dots (remaining 9 datasets $\Delta$ from $+0.027$ down to $+0.004$)}} \\
 breast-w          & 0.994 & 0.990 & $+0.004$ \\
 \bottomrule
 \end{tabular}
@@ -259,14 +290,15 @@ controlled experiment shows.}
 \end{figure}
 
 \textbf{The correlation.} Across random draws, the direction predicted by H2
-holds everywhere: every correlation in Table~\ref{tab:repr} is negative (further
-from the full distribution $\rightarrow$ lower AUC), and in
+holds everywhere: all 15 correlations in Table~\ref{tab:repr} are negative
+(further from the full distribution $\rightarrow$ lower AUC), and in
 Table~\ref{tab:contrast} the most-representative third of draws beats the
-least-representative third on all six datasets. \texttt{feat\_shift} is the
-stronger predictor, strong where the dataset has accuracy headroom---credit-g
-($r=-0.79$, $R^2=0.62$), vehicle ($r=-0.77$), diabetes ($r=-0.55$)---and weak
-near ceiling (breast-w, wdbc) or chance (blood-transfusion). Taken alone, this
-looks like support for H2. It is not, and the rest of this section explains why.
+least-representative third on all 15 datasets. \texttt{feat\_shift} is the
+stronger predictor (pooled Pearson $-0.55$, $R^2=0.31$), and strong on several
+datasets---waveform-5000 ($r=-0.83$, $R^2=0.68$), credit-g ($r=-0.80$), vehicle
+($r=-0.79$), spambase ($r=-0.78$)---while weaker near ceiling (breast-w) or on
+noisy datasets (kc1, heart-statlog). Taken alone, this looks like support for
+H2. It is not, and the rest of this section explains why.
 
 \subsection{A controlled test overturns the causal reading}
 
@@ -284,10 +316,10 @@ representativeness caused accuracy, the low-shift contexts should score highest.
 The opposite happens (Table~\ref{tab:controlled}). Forcing low
 \texttt{feat\_shift} reduces accuracy substantially---to 0.49 on diabetes and
 0.39 on blood-transfusion, far below random---while the high-shift contexts are
-as good as or better than random. The high-vs-low effect is large and runs
-contrary to the original hypothesis (Cohen's $d$ up to $-22.6$, Cliff's
-$\delta=-1.0$ on four datasets). So matching the marginal feature means does not
-cause good performance; when isolated, it degrades it.
+as good as or better than random. On most datasets the high-vs-low effect is
+large and runs contrary to the original hypothesis (Cohen's $d$ up to $-22.6$,
+Cliff's $\delta=-1.0$ on six datasets). So matching the marginal feature means
+does not cause good performance; when isolated, it usually degrades it.
 
 \begin{table}[h]
 \centering
@@ -299,19 +331,32 @@ accuracy substantially; $d$ and $\delta$ are the high-vs-low effect sizes.}
 \toprule
 Dataset & high repr. & random & low repr. & Cohen $d$ & Cliff $\delta$ \\
 \midrule
-diabetes          & $0.488{\pm}.028$ & $0.859{\pm}.017$ & $0.861{\pm}.006$ & $-9.1$  & $-1.0$ \\
-credit-g          & $0.601{\pm}.023$ & $0.765{\pm}.017$ & $0.708{\pm}.009$ & $-3.0$  & $-0.97$ \\
-vehicle           & $0.910{\pm}.007$ & $0.945{\pm}.004$ & $0.906{\pm}.006$ & $+0.4$  & $+0.26$ \\
-wdbc              & $0.991{\pm}.002$ & $0.992{\pm}.002$ & $0.980{\pm}.002$ & $+4.8$  & $+1.0$ \\
-breast-w          & $0.963{\pm}.001$ & $0.994{\pm}.002$ & $0.992{\pm}.001$ & $-22.6$ & $-1.0$ \\
-blood-transfusion & $0.389{\pm}.016$ & $0.694{\pm}.010$ & $0.732{\pm}.005$ & $-14.2$ & $-1.0$ \\
+diabetes           & $.488{\pm}.027$ & $.859{\pm}.009$ & $.861{\pm}.003$ & $-9.1$ & $-1.00$ \\
+credit-g           & $.601{\pm}.024$ & $.765{\pm}.016$ & $.708{\pm}.008$ & $-3.0$ & $-0.97$ \\
+vehicle            & $.910{\pm}.007$ & $.945{\pm}.004$ & $.906{\pm}.006$ & $+0.3$ & $+0.26$ \\
+wdbc               & $.991{\pm}.001$ & $.992{\pm}.002$ & $.980{\pm}.001$ & $+4.8$ & $+1.00$ \\
+breast-w           & $.963{\pm}.001$ & $.994{\pm}.001$ & $.992{\pm}.001$ & $-22.6$ & $-1.00$ \\
+blood-transfusion  & $.389{\pm}.016$ & $.694{\pm}.009$ & $.732{\pm}.004$ & $-14.2$ & $-1.00$ \\
+ionosphere         & $.966{\pm}.002$ & $.980{\pm}.003$ & $.972{\pm}.003$ & $-1.2$ & $-0.55$ \\
+sonar              & $.908{\pm}.004$ & $.893{\pm}.005$ & $.897{\pm}.003$ & $+1.6$ & $+0.76$ \\
+glass              & $.953{\pm}.006$ & $.950{\pm}.005$ & $.931{\pm}.002$ & $+2.4$ & $+0.99$ \\
+australian         & $.777{\pm}.029$ & $.925{\pm}.007$ & $.929{\pm}.003$ & $-3.5$ & $-1.00$ \\
+heart-statlog      & $.866{\pm}.003$ & $.872{\pm}.006$ & $.868{\pm}.004$ & $-0.2$ & $-0.09$ \\
+segment            & $.975{\pm}.003$ & $.994{\pm}.001$ & $.969{\pm}.005$ & $+0.7$ & $+0.40$ \\
+waveform-5000      & $.699{\pm}.015$ & $.963{\pm}.002$ & $.936{\pm}.007$ & $-10.2$ & $-1.00$ \\
+spambase           & $.677{\pm}.036$ & $.977{\pm}.001$ & $.967{\pm}.002$ & $-5.6$ & $-1.00$ \\
+kc1                & $.530{\pm}.022$ & $.797{\pm}.016$ & $.661{\pm}.014$ & $-3.4$ & $-0.98$ \\
 \bottomrule
 \end{tabular}
 \end{table}
 
-The reason is a confound: our low-shift construction also collapses the
-\emph{diversity} of the context (rows are chosen to cancel each other's
-deviations, so they cluster). The correlation in
+The pattern is dominant but not universal: on 9 of 15 datasets forcing low shift
+reduces accuracy (large negative $d$, $\delta=-1.0$ on 6), with the most dramatic
+drops on spambase ($0.68$ vs.\ $0.98$), waveform ($0.70$ vs.\ $0.96$), and the
+originals. A handful of near-ceiling datasets (sonar, glass, wdbc) show small
+positive effects. The reason for the dominant pattern is a confound: our low-shift
+construction also reduces the \emph{diversity} of the context (rows are chosen to
+cancel each other's deviations, so they cluster). The correlation in
 Table~\ref{tab:repr} arose because, among random draws, a more shifted draw also
 tends to be a less diverse one. To find which factor actually matters, we must
 vary them independently.
@@ -330,37 +375,49 @@ association of each factor with AUC while holding the other fixed
 \begin{table}[h]
 \centering
 \caption{Correlation of context geometry with AUC (all six construction methods
-pooled). ``shift$\mid$div'' is the partial correlation of feature-mean shift with
-AUC controlling for diversity, and vice versa; $\beta$ are standardized
-regression coefficients from AUC $\sim$ shift $+$ diversity.}
+pooled, per dataset). ``shift$\mid$div'' is the partial correlation of
+feature-mean shift with AUC controlling for diversity, and vice versa; $\beta$
+are standardized regression coefficients from AUC $\sim$ shift $+$ diversity.}
 \label{tab:partial}
 \begin{tabular}{lrrrrrr}
 \toprule
 Dataset & $r$(shift) & $r$(div) & shift$\mid$div & div$\mid$shift & $\beta_{\text{shift}}$ & $\beta_{\text{div}}$ \\
 \midrule
-diabetes          & $+0.49$ & $+0.67$ & $+0.34$ & $+0.60$ & $+0.27$ & $+0.57$ \\
-credit-g          & $+0.13$ & $+0.35$ & $+0.09$ & $+0.34$ & $+0.08$ & $+0.34$ \\
-vehicle           & $-0.62$ & $+0.39$ & $-0.67$ & $+0.49$ & $-0.61$ & $+0.38$ \\
-wdbc              & $+0.00$ & $+0.46$ & $-0.37$ & $+0.56$ & $-0.40$ & $+0.69$ \\
-breast-w          & $+0.40$ & $+0.57$ & $-0.02$ & $+0.45$ & $-0.03$ & $+0.59$ \\
-blood-transfusion & $+0.26$ & $+0.17$ & $+0.20$ & $+0.03$ & $+0.24$ & $+0.04$ \\
+diabetes           & $+0.49$ & $+0.67$ & $+0.34$ & $+0.60$ & $+0.27$ & $+0.57$ \\
+credit-g           & $+0.13$ & $+0.35$ & $+0.09$ & $+0.34$ & $+0.08$ & $+0.34$ \\
+vehicle            & $-0.62$ & $+0.39$ & $-0.67$ & $+0.49$ & $-0.61$ & $+0.38$ \\
+wdbc               & $+0.00$ & $+0.46$ & $-0.37$ & $+0.56$ & $-0.40$ & $+0.69$ \\
+breast-w           & $+0.40$ & $+0.57$ & $-0.02$ & $+0.45$ & $-0.03$ & $+0.59$ \\
+blood-transfusion  & $+0.26$ & $+0.17$ & $+0.20$ & $+0.03$ & $+0.24$ & $+0.04$ \\
+ionosphere         & $-0.65$ & $+0.62$ & $-0.84$ & $+0.83$ & $-0.66$ & $+0.63$ \\
+sonar              & $-0.11$ & $-0.07$ & $-0.15$ & $-0.12$ & $-0.17$ & $-0.13$ \\
+glass              & $-0.49$ & $+0.02$ & $-0.56$ & $-0.31$ & $-0.66$ & $-0.32$ \\
+australian         & $+0.13$ & $-0.33$ & $+0.08$ & $-0.32$ & $+0.08$ & $-0.32$ \\
+heart-statlog      & $-0.11$ & $-0.26$ & $-0.15$ & $-0.28$ & $-0.15$ & $-0.28$ \\
+segment            & $+0.36$ & $+0.41$ & $-0.12$ & $+0.25$ & $-0.36$ & $+0.75$ \\
+waveform-5000      & $+0.27$ & $+0.10$ & $+0.34$ & $+0.24$ & $+0.38$ & $+0.25$ \\
+spambase           & $+0.53$ & $+0.48$ & $+0.26$ & $+0.05$ & $+0.46$ & $+0.08$ \\
+kc1                & $+0.02$ & $-0.23$ & $+0.50$ & $-0.54$ & $+1.09$ & $-1.20$ \\
 \midrule
-pooled (z-scored) & $+0.11$ & $+0.44$ & $-0.08$ & $+0.43$ & $-0.07$ & $+0.47$ \\
+pooled (z-scored)  & $+0.04$ & $+0.22$ & $-0.01$ & $+0.22$ & $-0.01$ & $+0.23$ \\
 \bottomrule
 \end{tabular}
 \end{table}
 
-\textbf{What we observe.} Diversity is the factor that survives. Pooled across
-datasets, diversity's partial correlation with AUC (controlling for shift) is
-$+0.43$ and its standardized coefficient is $+0.47$, whereas feature-mean
-shift's partial correlation (controlling for diversity) is $-0.08$ and its
-coefficient $-0.07$---essentially zero. Per dataset, the diversity partial
-correlation is positive on all six; the shift partial correlation is near zero or
-negative on four of six. Coverage (log-det of the context covariance) tracks AUC
-about as strongly as pairwise diversity (e.g.\ $r=0.69$ on diabetes, $0.72$ on
-vehicle). The method table underneath tells the same story directly: the
-low-shift/high-diversity construction scores well while the higher-shift/low-diversity
-clump scores poorly.
+\textbf{What we observe.} Diversity is the factor that survives in aggregate.
+Pooled across datasets, diversity's partial correlation with AUC (controlling for
+shift) is $+0.22$ and its standardized coefficient $+0.23$, whereas feature-mean
+shift's partial correlation (controlling for diversity) is $-0.01$ and its
+coefficient $-0.01$---essentially zero. The per-dataset picture is mixed rather
+than unanimous: diversity's partial correlation is positive on nine of fifteen
+datasets (strong on ionosphere $+0.83$, diabetes $+0.60$, wdbc $+0.56$) and
+negative on a few (australian, glass, heart-statlog), so the effect is
+directionally dominant, not universal. Coverage (log-det of the context
+covariance) tracks AUC about as strongly as pairwise diversity on the datasets
+where either does (e.g.\ $r=0.72$ on vehicle, $0.69$ on diabetes, $0.67$ on
+segment). The controlled construction (Table~\ref{tab:controlled}) remains the
+cleaner evidence: the low-shift/high-diversity set scores well while the
+low-shift/low-diversity clump scores poorly.
 
 We therefore correct H2. The representativeness--accuracy correlation is real but
 \emph{not causal}: it is a shadow of a diversity--accuracy relationship, because
@@ -370,32 +427,38 @@ marginal feature distribution. This also explains the cross-method observation
 that K-Means and FPS---which are far from distribution-preserving but cover the
 space well---match or beat random (H3): they succeed through diversity, the factor
 that matters, not through representativeness, the factor that does not. \textbf{Formal inference.} To test this with proper accounting for dataset-level
-variation, we fit a linear mixed-effects model over all 378 constructed contexts,
+variation, we fit a linear mixed-effects model over all 945 constructed contexts
+from the 15 datasets,
 \[
 \text{AUC} \sim \text{diversity} + \text{shift} + (1\mid\text{dataset}),
 \]
-with predictors and outcome z-scored within dataset. Diversity is a strong,
-highly significant predictor ($\beta=+0.47$, SE $0.05$, $p=3\times10^{-20}$,
-95\% CI $[+0.37,+0.56]$), while feature-mean shift is not significant once
-diversity is in the model ($\beta=-0.07$, SE $0.05$, $p=0.14$, 95\% CI
-$[-0.17,+0.03]$). A random-slope variant (diversity slope varying by dataset)
-gives the same fixed effects (diversity $\beta=+0.47$, $p=3\times10^{-6}$; shift
-$p=0.10$). With only six datasets the random-slope covariance is singular, so we
-treat the random-intercept model as primary and the slope model as a robustness
-check; both agree.
+with predictors and outcome z-scored within dataset. Diversity is a highly
+significant predictor ($\beta=+0.23$, SE $0.03$, $p=3\times10^{-12}$, 95\% CI
+$[+0.16,+0.29]$), while feature-mean shift is not significant once diversity is
+in the model ($\beta=-0.01$, SE $0.03$, $p=0.71$, 95\% CI $[-0.08,+0.05]$). A
+random-slope variant (diversity slope varying by dataset) agrees on the sign and
+significance of diversity ($\beta=+0.25$, $p=0.004$); shift is small and, if
+anything, negative ($\beta=-0.09$, $p=0.008$)---the opposite of what
+representativeness would predict. With 15 dataset groups the random-slope
+covariance is well-conditioned, unlike the six-dataset pilot. The pooled effect
+is smaller than that pilot suggested ($\beta=0.23$ vs.\ $0.47$), which we read as
+regression to a more reliable estimate on the broader sample.
 
-We say ``appears to be'' deliberately: our diversity and coverage measures are
+We say ``appears to be'' deliberately: the per-dataset partial correlations are
+mixed (Table~\ref{tab:partial}), our diversity and coverage measures are
 geometric proxies, and the evidence is a controlled association across
-constructions (with six dataset groups), not a randomized single-factor
-intervention.
+constructions, not a randomized single-factor intervention. The claim we stand
+behind is the aggregate one---diversity predicts accuracy and feature-mean shift
+does not---backed by the controlled test and the mixed-effects model.
 
 \begin{figure}[h]
 \centering
 \includegraphics[width=\textwidth]{figures/p2_fig4_disentangle.pdf}
-\caption{H2 corrected. Left: across all constructed contexts, AUC rises with
-context diversity (z-scored within dataset). Right: partial correlations---diversity
-controlling for shift stays positive on every dataset, while shift controlling for
-diversity is near zero or negative. Diversity is the factor that survives.}
+\caption{H2 corrected. Left: across all constructed contexts, AUC tends to rise
+with context diversity (z-scored within dataset). Right: partial correlations per
+dataset---diversity controlling for shift (green) is positive on most datasets,
+while shift controlling for diversity (red) is near zero or negative. In
+aggregate (pooled and mixed-effects) diversity is the factor that survives.}
 \label{fig:disentangle}
 \end{figure}
 
@@ -415,16 +478,25 @@ seeds).}
 \toprule
 Dataset & random AUC & K-Means AUC & FPS AUC \\
 \midrule
-diabetes          & $0.870{\pm}.018$ & $0.881{\pm}.004$ & $0.879{\pm}.002$ \\
-credit-g          & $0.734{\pm}.072$ & $0.755{\pm}.066$ & $0.712{\pm}.023$ \\
-vehicle           & $0.946{\pm}.005$ & $0.943{\pm}.015$ & $0.948{\pm}.002$ \\
-wdbc              & $0.994{\pm}.003$ & $0.987{\pm}.005$ & $0.994{\pm}.001$ \\
-breast-w          & $0.995{\pm}.003$ & $0.994{\pm}.001$ & $0.992{\pm}.001$ \\
-blood-transfusion & $0.686{\pm}.009$ & $0.720{\pm}.011$ & $0.718{\pm}.008$ \\
+diabetes           & $.869{\pm}.016$ & $.883{\pm}.007$ & $.877{\pm}.004$ \\
+credit-g           & $.745{\pm}.057$ & $.755{\pm}.068$ & $.712{\pm}.024$ \\
+vehicle            & $.947{\pm}.004$ & $.944{\pm}.014$ & $.947{\pm}.004$ \\
+wdbc               & $.994{\pm}.003$ & $.987{\pm}.004$ & $.994{\pm}.001$ \\
+breast-w           & $.994{\pm}.004$ & $.995{\pm}.001$ & $.992{\pm}.002$ \\
+blood-transfusion  & $.686{\pm}.008$ & $.720{\pm}.009$ & $.725{\pm}.007$ \\
+ionosphere         & $.978{\pm}.004$ & $.974{\pm}.007$ & $.960{\pm}.003$ \\
+sonar              & $.893{\pm}.004$ & $.895{\pm}.007$ & $.896{\pm}.004$ \\
+glass              & $.952{\pm}.005$ & $.938{\pm}.016$ & $.929{\pm}.016$ \\
+australian         & $.924{\pm}.012$ & $.934{\pm}.005$ & $.929{\pm}.008$ \\
+heart-statlog      & $.855{\pm}.020$ & $.863{\pm}.005$ & $.868{\pm}.007$ \\
+segment            & $.995{\pm}.002$ & $.995{\pm}.001$ & $.997{\pm}.001$ \\
+waveform-5000      & $.968{\pm}.001$ & $.958{\pm}.006$ & $.968{\pm}.005$ \\
+spambase           & $.971{\pm}.005$ & $.975{\pm}.007$ & $.966{\pm}.001$ \\
+kc1                & $.800{\pm}.012$ & $.790{\pm}.019$ & $.771{\pm}.018$ \\
 \midrule
 \multicolumn{4}{l}{\textit{selection time (mean over datasets):}} \\
-\multicolumn{4}{l}{random $\approx 0.0003$\,s \quad FPS $\approx 0.007$\,s
-\quad K-Means $\approx 0.27$\,s} \\
+\multicolumn{4}{l}{random $\approx 0.0003$\,s \quad FPS $\approx 0.04$\,s
+\quad K-Means $\approx 0.22$\,s} \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -437,17 +509,16 @@ blood-transfusion & $0.686{\pm}.009$ & $0.720{\pm}.011$ & $0.718{\pm}.008$ \\
 \label{fig:selection}
 \end{figure}
 
-\textbf{What we observe.} Accuracy differences between the three methods are
-small---within about one to three AUC points, and not in a consistent direction
-(K-Means was marginally ahead on diabetes, credit-g, and blood-transfusion;
-FPS or random on the others). The 95\% confidence intervals overlap across
-methods on most datasets; on credit-g, where K-Means led random by about two
-points, the intervals ($0.755{\pm}.066$ vs.\ $0.734{\pm}.072$) overlap heavily,
-so that gap is not distinguishable from seed noise. Meanwhile the compute cost
-differs sharply: random selection took on the order of $0.0003$\,s versus
-$\sim$0.27\,s for K-Means---roughly three orders of magnitude---and up to about a
-second on one dataset. Given near-equal accuracy, the extra machinery of K-Means
-or FPS bought little over drawing rows at random.
+\textbf{What we observe.} Across all 15 datasets, accuracy differences between the
+three methods are small---within about one to three AUC points, and not in a
+consistent direction (K-Means marginally ahead on some, FPS or random on others).
+The 95\% confidence intervals overlap across methods on most datasets; on
+credit-g, where K-Means led random by about one point, the intervals
+($0.755{\pm}.068$ vs.\ $0.745{\pm}.057$) overlap heavily, so that gap is not
+distinguishable from seed noise. Meanwhile the compute cost differs sharply:
+random selection took on the order of $0.0003$\,s versus $\sim$0.22\,s for
+K-Means---roughly three orders of magnitude. Given near-equal accuracy, the extra
+machinery of K-Means or FPS bought little over drawing rows at random.
 
 This ties back to H2. K-Means and FPS already maximize context diversity---by
 spreading prototypes across clusters or across the feature space---which is
@@ -461,20 +532,20 @@ not in the property that matters.
 Starting from a random context of $k{=}128$, we either duplicated a fraction of
 its rows (adding no new information) or dropped a fraction of them.
 
-\textbf{Redundancy.} Duplicating rows had little effect on most datasets: on
-diabetes, vehicle, wdbc, and breast-w, AUC stayed within about half a point up
-to 50--70\% duplication. The exception was blood-transfusion, where duplication
-steadily hurt (0.686 at 0\% down to 0.580 at 70\%), and to a lesser extent
-credit-g. So duplicate context rows are mostly harmless when the underlying
-signal is strong, but on a weak-signal dataset they skew the context and degrade
-predictions.
+\textbf{Redundancy.} Duplicating rows had little effect on most of the 15
+datasets: on 13 of them AUC stayed within about 1.5 points up to 70\%
+duplication. The clear exception was blood-transfusion, where duplication
+steadily hurt ($0.686\rightarrow0.583$), with kc1 and glass showing milder
+declines ($\approx-0.015$). So duplicate context rows are mostly harmless when
+the signal is strong, but on weak-signal datasets they skew the context and
+degrade predictions.
 
 \textbf{Robustness.} Dropping rows degraded accuracy gradually rather than
-sharply. Removing 30\% of a 128-row context cost roughly 0--1.5 AUC points on the
-stronger datasets (wdbc, breast-w, vehicle, diabetes) and more on the weaker
-ones; only at 50\% removal did larger drops appear (e.g.\ blood-transfusion
-$0.686\rightarrow0.614$). This is consistent with H1: with fewer rows the context
-carries less of the distribution and predictions get both worse and noisier.
+sharply. Removing 50\% of a 128-row context cost under 1 AUC point on the
+stronger datasets (breast-w, diabetes, segment, wdbc) and more on the small or
+weak ones (sonar $-0.076$, glass $-0.045$, blood-transfusion $-0.071$). This is
+consistent with H1: with fewer rows the context covers less of the space and
+predictions get both worse and noisier.
 
 \section{Discussion}
 
@@ -508,7 +579,8 @@ $k$ grows. (2) Accuracy correlates with how representative a random context is,
 but a controlled experiment overturns that reading: constructing contexts to
 match the feature means \emph{lowers} accuracy (by up to 0.5 AUC), and once we
 disentangle the two factors, context diversity/coverage predicts accuracy
-(pooled partial correlation $+0.43$) while feature-mean shift does not ($-0.08$).
+(mixed-effects $\beta=+0.23$, $p=3\times10^{-12}$) while feature-mean shift does
+not ($\beta=-0.01$, $p=0.71$).
 (3) K-Means and farthest-point selection---diverse but not
 distribution-preserving---match random within about one AUC point at two to three
 orders of magnitude more cost. The practical recommendation is direct: use a
@@ -524,14 +596,16 @@ succeeds because it provides the former for free.
 representativeness, drives accuracy comes from controlled constructions, partial
 correlations, and a mixed-effects model---stronger than a raw correlation, but
 still an association over a designed set of contexts rather than a randomized
-intervention on a single factor. The mixed-effects inference rests on six dataset
-groups, which is few (and makes the random-slope covariance singular). Diversity
-and coverage are measured with geometric proxies (mean pairwise distance,
-covariance log-determinant); a different proxy could shift the details. We say
-diversity ``appears to be'' the driver accordingly.
-\item \textbf{Scope of data.} Six small tabular datasets ($<1{,}000$ training
-rows); the findings may not extend to larger, higher-dimensional, or non-tabular
-data. The strength of H2 in particular depends on a dataset having AUC headroom.
+intervention on a single factor. The per-dataset partial correlations are mixed
+(positive on nine of fifteen datasets), so the diversity effect is directionally
+dominant in aggregate but not universal. Diversity and coverage are measured with
+geometric proxies (mean pairwise distance, covariance log-determinant); a
+different proxy could shift the details. We say diversity ``appears to be'' the
+driver accordingly.
+\item \textbf{Scope of data.} Fifteen small tabular datasets (roughly
+200--5000 rows); the findings may not extend to much larger, higher-dimensional,
+or non-tabular data. The strength of H2 on any single dataset depends on its
+having AUC headroom.
 \item \textbf{Model.} A single model (TabPFN v3). Whether the same context
 behavior holds for other in-context tabular learners is untested.
 \item \textbf{Selection algorithms.} We compare three (random, K-Means, FPS); a
@@ -539,8 +613,8 @@ method specifically optimized for context quality could behave differently.
 \item \textbf{Representativeness metrics.} Two coarse distances (class-TV,
 feature-mean shift); richer divergences (e.g.\ MMD, per-feature KL) might explain
 more and are future work.
-\item \textbf{Compute.} CPU-only; the selection-time comparison reflects CPU
-cost.
+\item \textbf{Compute.} Runs used a single consumer GPU (RTX 4060); the
+selection-time comparison reflects that setup and would differ on other hardware.
 \end{itemize}
 
 \section*{Reproducibility}
