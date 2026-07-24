@@ -150,42 +150,66 @@ families can vary independently, and separating them is the crux of H2.
 \section{H1: Context Stability}
 
 For each $k$ we drew 20 independent random contexts and recorded the resulting
-test AUC. Table~\ref{tab:stability} reports the mean, and---as a scale-free
-measure of variability---the coefficient of variation
-$\mathrm{CV}=\sigma/\mu$ (as a percentage). Figure~\ref{fig:stability} plots
-mean AUC and CV against $k$.
+test AUC. Table~\ref{tab:stability} reports the mean $\pm$ 95\% CI, and
+Table~\ref{tab:stability_cv} the coefficient of variation
+$\mathrm{CV}=\sigma/\mu$---a scale-free measure of variability---as a percentage.
+Figure~\ref{fig:stability} plots mean AUC and CV against $k$.
 
 \begin{table}[h]
 \centering
-\caption{Accuracy across 20 random contexts per $k$. Each cell is
-mean ROC AUC $\pm$ 95\% CI, with coefficient of variation
-($\mathrm{CV}=\sigma/\mu$) in parentheses.}
+\caption{Mean ROC AUC $\pm$ 95\% CI across 20 random contexts per $k$.
+Dashes: $k{=}256$ exceeds the training-set size on the smallest datasets.}
 \label{tab:stability}
 \begin{tabular}{lrrrrr}
 \toprule
 Dataset & $k{=}16$ & $k{=}32$ & $k{=}64$ & $k{=}128$ & $k{=}256$ \\
 \midrule
-diabetes           & $.738{\pm}.042$ (12.9\%) & $.788{\pm}.034$ (9.7\%) & $.834{\pm}.008$ (2.1\%) & $.858{\pm}.006$ (1.7\%) & $.872{\pm}.005$ (1.3\%) \\
-credit-g           & $.648{\pm}.030$ (10.5\%) & $.678{\pm}.027$ (9.0\%) & $.734{\pm}.021$ (6.5\%) & $.774{\pm}.013$ (3.8\%) & $.808{\pm}.008$ (2.1\%) \\
-vehicle            & $.763{\pm}.022$ (6.5\%) & $.870{\pm}.007$ (1.9\%) & $.920{\pm}.008$ (2.1\%) & $.946{\pm}.005$ (1.1\%) & $.960{\pm}.002$ (0.5\%) \\
-wdbc               & $.955{\pm}.024$ (5.8\%) & $.980{\pm}.004$ (0.8\%) & $.987{\pm}.004$ (0.8\%) & $.990{\pm}.002$ (0.6\%) & $.995{\pm}.001$ (0.2\%) \\
-breast-w           & $.988{\pm}.003$ (0.6\%) & $.989{\pm}.003$ (0.8\%) & $.992{\pm}.002$ (0.4\%) & $.993{\pm}.002$ (0.4\%) & $.994{\pm}.001$ (0.2\%) \\
-blood-transfusion  & $.628{\pm}.033$ (11.9\%) & $.644{\pm}.027$ (9.5\%) & $.670{\pm}.015$ (5.2\%) & $.690{\pm}.012$ (4.0\%) & $.698{\pm}.011$ (3.5\%) \\
-ionosphere         & $.882{\pm}.035$ (8.9\%) & $.957{\pm}.010$ (2.3\%) & $.972{\pm}.004$ (1.0\%) & $.980{\pm}.002$ (0.5\%) & $.984{\pm}.001$ (0.3\%) \\
-sonar              & $.744{\pm}.036$ (11.0\%) & $.776{\pm}.032$ (9.3\%) & $.823{\pm}.016$ (4.5\%) & $.899{\pm}.008$ (1.9\%) & --- \\
-glass              & $.824{\pm}.080$ (8.6\%) & $.854{\pm}.018$ (4.6\%) & $.917{\pm}.013$ (3.3\%) & $.950{\pm}.005$ (1.3\%) & --- \\
-australian         & $.862{\pm}.029$ (7.7\%) & $.906{\pm}.007$ (1.8\%) & $.916{\pm}.006$ (1.4\%) & $.923{\pm}.005$ (1.3\%) & $.932{\pm}.004$ (1.0\%) \\
-heart-statlog      & $.824{\pm}.026$ (7.1\%) & $.847{\pm}.018$ (4.7\%) & $.854{\pm}.015$ (4.0\%) & $.869{\pm}.006$ (1.5\%) & --- \\
-segment            & $.950{\pm}.010$ (1.5\%) & $.980{\pm}.004$ (1.0\%) & $.991{\pm}.001$ (0.2\%) & $.994{\pm}.001$ (0.1\%) & $.996{\pm}.001$ (0.1\%) \\
-waveform-5000      & $.829{\pm}.023$ (6.2\%) & $.891{\pm}.019$ (4.9\%) & $.945{\pm}.005$ (1.3\%) & $.962{\pm}.002$ (0.5\%) & $.969{\pm}.001$ (0.3\%) \\
-spambase           & $.913{\pm}.012$ (2.9\%) & $.945{\pm}.008$ (2.0\%) & $.966{\pm}.003$ (0.7\%) & $.976{\pm}.001$ (0.3\%) & $.981{\pm}.001$ (0.3\%) \\
-kc1                & $.709{\pm}.058$ (17.8\%) & $.746{\pm}.029$ (8.9\%) & $.778{\pm}.017$ (5.0\%) & $.796{\pm}.014$ (4.0\%) & $.816{\pm}.007$ (1.9\%) \\
+diabetes           & $.738{\pm}.042$ & $.788{\pm}.034$ & $.834{\pm}.008$ & $.858{\pm}.006$ & $.872{\pm}.005$ \\
+credit-g           & $.648{\pm}.030$ & $.678{\pm}.027$ & $.734{\pm}.021$ & $.774{\pm}.013$ & $.808{\pm}.008$ \\
+vehicle            & $.763{\pm}.022$ & $.870{\pm}.007$ & $.920{\pm}.008$ & $.946{\pm}.005$ & $.960{\pm}.002$ \\
+wdbc               & $.955{\pm}.024$ & $.980{\pm}.004$ & $.987{\pm}.004$ & $.990{\pm}.002$ & $.995{\pm}.001$ \\
+breast-w           & $.988{\pm}.003$ & $.989{\pm}.003$ & $.992{\pm}.002$ & $.993{\pm}.002$ & $.994{\pm}.001$ \\
+blood-transfusion  & $.628{\pm}.033$ & $.644{\pm}.027$ & $.670{\pm}.015$ & $.690{\pm}.012$ & $.698{\pm}.011$ \\
+ionosphere         & $.882{\pm}.035$ & $.957{\pm}.010$ & $.972{\pm}.004$ & $.980{\pm}.002$ & $.984{\pm}.001$ \\
+sonar              & $.744{\pm}.036$ & $.776{\pm}.032$ & $.823{\pm}.016$ & $.899{\pm}.008$ & --- \\
+glass              & $.824{\pm}.080$ & $.854{\pm}.018$ & $.917{\pm}.013$ & $.950{\pm}.005$ & --- \\
+australian         & $.862{\pm}.029$ & $.906{\pm}.007$ & $.916{\pm}.006$ & $.923{\pm}.005$ & $.932{\pm}.004$ \\
+heart-statlog      & $.824{\pm}.026$ & $.847{\pm}.018$ & $.854{\pm}.015$ & $.869{\pm}.006$ & --- \\
+segment            & $.950{\pm}.010$ & $.980{\pm}.004$ & $.991{\pm}.001$ & $.994{\pm}.001$ & $.996{\pm}.001$ \\
+waveform-5000      & $.829{\pm}.023$ & $.891{\pm}.019$ & $.945{\pm}.005$ & $.962{\pm}.002$ & $.969{\pm}.001$ \\
+spambase           & $.913{\pm}.012$ & $.945{\pm}.008$ & $.966{\pm}.003$ & $.976{\pm}.001$ & $.981{\pm}.001$ \\
+kc1                & $.709{\pm}.058$ & $.746{\pm}.029$ & $.778{\pm}.017$ & $.796{\pm}.014$ & $.816{\pm}.007$ \\
 \bottomrule
 \end{tabular}
 \end{table}
 
-\noindent(Dashes: $k{=}256$ exceeds the training-set size on the smallest
-datasets, so that context is not evaluated.)
+\begin{table}[h]
+\centering
+\caption{Coefficient of variation ($\mathrm{CV}=\sigma/\mu$, \%) of ROC AUC
+across the same 20 random contexts. CV falls as $k$ grows on every dataset.}
+\label{tab:stability_cv}
+\begin{tabular}{lrrrrr}
+\toprule
+Dataset & $k{=}16$ & $k{=}32$ & $k{=}64$ & $k{=}128$ & $k{=}256$ \\
+\midrule
+diabetes           & 12.9 & 9.7 & 2.1 & 1.7 & 1.3 \\
+credit-g           & 10.5 & 9.0 & 6.5 & 3.8 & 2.1 \\
+vehicle            & 6.5 & 1.9 & 2.1 & 1.1 & 0.5 \\
+wdbc               & 5.8 & 0.8 & 0.8 & 0.6 & 0.2 \\
+breast-w           & 0.6 & 0.8 & 0.4 & 0.4 & 0.2 \\
+blood-transfusion  & 11.9 & 9.5 & 5.2 & 4.0 & 3.5 \\
+ionosphere         & 8.9 & 2.3 & 1.0 & 0.5 & 0.3 \\
+sonar              & 11.0 & 9.3 & 4.5 & 1.9 & --- \\
+glass              & 8.6 & 4.6 & 3.3 & 1.3 & --- \\
+australian         & 7.7 & 1.8 & 1.4 & 1.3 & 1.0 \\
+heart-statlog      & 7.1 & 4.7 & 4.0 & 1.5 & --- \\
+segment            & 1.5 & 1.0 & 0.2 & 0.1 & 0.1 \\
+waveform-5000      & 6.2 & 4.9 & 1.3 & 0.5 & 0.3 \\
+spambase           & 2.9 & 2.0 & 0.7 & 0.3 & 0.3 \\
+kc1                & 17.8 & 8.9 & 5.0 & 4.0 & 1.9 \\
+\bottomrule
+\end{tabular}
+\end{table}
 
 \begin{figure}[h]
 \centering
@@ -379,6 +403,7 @@ pooled, per dataset). ``shift$\mid$div'' is the partial correlation of
 feature-mean shift with AUC controlling for diversity, and vice versa; $\beta$
 are standardized regression coefficients from AUC $\sim$ shift $+$ diversity.}
 \label{tab:partial}
+\small
 \begin{tabular}{lrrrrrr}
 \toprule
 Dataset & $r$(shift) & $r$(div) & shift$\mid$div & div$\mid$shift & $\beta_{\text{shift}}$ & $\beta_{\text{div}}$ \\
