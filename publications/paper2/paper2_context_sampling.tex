@@ -640,43 +640,56 @@ succeeds because it provides the former for free.
 
 \section{Limitations}
 
-\begin{itemize}
-\item \textbf{Strength of the causal claim.} Our evidence that diversity, not
-representativeness, drives accuracy comes from controlled constructions, partial
-correlations, and a mixed-effects model---stronger than a raw correlation, but
-still an association over a designed set of contexts rather than a randomized
-intervention on a single factor. The per-dataset partial correlations are mixed
-(positive on nine of fifteen datasets), so the diversity effect is directionally
-dominant in aggregate but not universal. Diversity and coverage are measured with
-geometric proxies (mean pairwise distance, covariance log-determinant); a
-different proxy could shift the details. We say diversity ``appears to be'' the
-driver accordingly.
-\item \textbf{Scope of data.} Fifteen small tabular datasets (roughly
-200--5000 rows); the findings may not extend to much larger, higher-dimensional,
-or non-tabular data. The strength of H2 on any single dataset depends on its
-having AUC headroom.
-\item \textbf{Model.} A single model (TabPFN v3). Whether the same context
-behavior holds for other in-context tabular learners is untested.
-\item \textbf{Selection algorithms.} We compare three (random, K-Means, FPS); a
-method specifically optimized for context quality---for instance an
-active-learning-style informativeness criterion \cite{settles2009active}---could
-behave differently.
-\item \textbf{Representativeness metrics.} Two coarse distances (class-TV,
-feature-mean shift); richer divergences (e.g.\ MMD, per-feature KL) might explain
-more and are future work.
-\item \textbf{Compute.} Runs used a single consumer GPU (RTX 4060); the
+Several limitations bound how far these conclusions should be read. The most
+important concerns the strength of the causal claim. Our evidence that diversity,
+not representativeness, drives accuracy comes from controlled constructions,
+partial correlations, and a mixed-effects model---stronger than a raw
+correlation, but still an association over a designed set of contexts rather than
+a randomized intervention on a single factor. The per-dataset partial
+correlations are mixed (positive on nine of fifteen datasets), so the diversity
+effect is directionally dominant in aggregate but not universal; we say diversity
+``appears to be'' the driver accordingly. Diversity and coverage are themselves
+measured with geometric proxies (mean pairwise distance, covariance
+log-determinant), and a different proxy could shift the details.
+
+The scope of the evidence is also narrow in ways worth stating plainly. We study
+fifteen small tabular datasets (roughly 200--5000 rows), so the findings may not
+extend to much larger, higher-dimensional, or non-tabular data, and the strength
+of H2 on any single dataset depends on its having AUC headroom. We use a single
+model (TabPFN v3); whether the same context behavior holds for other in-context
+tabular learners is untested. We compare three selection methods (random,
+K-Means, FPS), so a method specifically optimized for context quality---for
+instance an active-learning-style informativeness criterion
+\cite{settles2009active}---could behave differently. Our representativeness
+descriptors are two coarse distances (class-TV, feature-mean shift), and richer
+divergences (e.g.\ MMD, per-feature KL) might explain more; we leave those to
+future work. Finally, all runs used a single consumer GPU (RTX 4060), so the
 selection-time comparison reflects that setup and would differ on other hardware.
-\end{itemize}
 
 \section*{Reproducibility}
 
-All numbers are read from logged runs: \texttt{exp14\_context\_sampling\_*.json}
-(H1, the correlational part of H2, H3, stress tests),
-\texttt{exp15\_controlled\_*.json} (the controlled representativeness test), and
-\texttt{exp16\_disentangle\_*.json} (the shift-vs-diversity disentangling), all
-under \texttt{experiments/results/}. The mixed-effects model is fit by
-\texttt{mixed\_effects\_exp16.py}. Datasets are public OpenML tasks; split seed
-and per-block seeds are recorded. Runs used an NVIDIA RTX 4060 GPU.
+All experiments are fully reproducible. The complete source code, experiment
+scripts, analysis scripts, and figure-generation pipeline are available at:
+
+\begin{center}
+\url{https://github.com/mohammed1916/tabmx}
+\end{center}
+
+The raw outputs of every experiment are stored under
+\texttt{experiments/results/}, including
+\texttt{exp14\_context\_sampling\_*.json},
+\texttt{exp15\_controlled\_*.json}, and
+\texttt{exp16\_disentangle\_*.json}. All tables and figures in this paper are
+generated directly from these result files using the provided analysis scripts
+(\texttt{analyze\_exp14.py}, \texttt{analyze\_exp15.py},
+\texttt{analyze\_exp16.py}, \texttt{mixed\_effects\_exp16.py}, and
+\texttt{generate\_paper2\_figures.py}), ensuring that every reported number is
+derived automatically from the logged experiment outputs.
+
+All datasets are publicly available through OpenML. Dataset identifiers,
+random seeds, train/test splits, and experiment configurations are recorded in
+the result files. Experiments were performed using TabPFN v3 on an NVIDIA RTX
+4060 GPU.
 
 \begin{thebibliography}{10}
 
