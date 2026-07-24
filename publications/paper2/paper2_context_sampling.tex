@@ -43,9 +43,10 @@ correlate with how well a random context preserves the training distribution,
 but a controlled experiment overturns the causal reading: when we construct
 contexts that match the feature means closely, accuracy \emph{collapses} (by up
 to 0.5 AUC), because that construction also destroys diversity. Disentangling
-the two shows diversity/coverage is the factor that predicts accuracy (pooled
-partial correlation $+0.43$, versus $-0.08$ for feature-mean shift once
-diversity is held fixed). This also explains why K-Means and farthest-point
+the two shows diversity/coverage is the factor that predicts accuracy: in a
+mixed-effects model over constructed contexts, diversity is highly significant
+($\beta=+0.47$, $p=3\times10^{-20}$) while feature-mean shift is not
+($\beta=-0.07$, $p=0.14$) once diversity is included. This also explains why K-Means and farthest-point
 selection---diverse but not distribution-preserving---match uniform random while
 costing two to three orders of magnitude more. Random sampling works because it
 covers the feature space in expectation, not because it matches its
@@ -363,10 +364,25 @@ appears to be \emph{coverage of the feature space}, not a close match to the
 marginal feature distribution. This also explains the cross-method observation
 that K-Means and FPS---which are far from distribution-preserving but cover the
 space well---match or beat random (H3): they succeed through diversity, the factor
-that matters, not through representativeness, the factor that does not. We say
-``appears to be'' deliberately: our diversity and coverage measures are geometric
-proxies, and the evidence is a controlled association across constructions, not a
-proof of mechanism.
+that matters, not through representativeness, the factor that does not. \textbf{Formal inference.} To test this with proper accounting for dataset-level
+variation, we fit a linear mixed-effects model over all 378 constructed contexts,
+\[
+\text{AUC} \sim \text{diversity} + \text{shift} + (1\mid\text{dataset}),
+\]
+with predictors and outcome z-scored within dataset. Diversity is a strong,
+highly significant predictor ($\beta=+0.47$, SE $0.05$, $p=3\times10^{-20}$,
+95\% CI $[+0.37,+0.56]$), while feature-mean shift is not significant once
+diversity is in the model ($\beta=-0.07$, SE $0.05$, $p=0.14$, 95\% CI
+$[-0.17,+0.03]$). A random-slope variant (diversity slope varying by dataset)
+gives the same fixed effects (diversity $\beta=+0.47$, $p=3\times10^{-6}$; shift
+$p=0.10$). With only six datasets the random-slope covariance is singular, so we
+treat the random-intercept model as primary and the slope model as a robustness
+check; both agree.
+
+We say ``appears to be'' deliberately: our diversity and coverage measures are
+geometric proxies, and the evidence is a controlled association across
+constructions (with six dataset groups), not a randomized single-factor
+intervention.
 
 \begin{figure}[h]
 \centering
@@ -493,13 +509,14 @@ succeeds because it provides the former for free.
 
 \begin{itemize}
 \item \textbf{Strength of the causal claim.} Our evidence that diversity, not
-representativeness, drives accuracy comes from controlled constructions and
-partial correlations across those constructions---stronger than a raw
-correlation, but still an association over a designed set of contexts rather than
-a randomized intervention on a single factor. Diversity and coverage are measured
-with geometric proxies (mean pairwise distance, covariance log-determinant); a
-different proxy could shift the details. We say diversity ``appears to be'' the
-driver accordingly.
+representativeness, drives accuracy comes from controlled constructions, partial
+correlations, and a mixed-effects model---stronger than a raw correlation, but
+still an association over a designed set of contexts rather than a randomized
+intervention on a single factor. The mixed-effects inference rests on six dataset
+groups, which is few (and makes the random-slope covariance singular). Diversity
+and coverage are measured with geometric proxies (mean pairwise distance,
+covariance log-determinant); a different proxy could shift the details. We say
+diversity ``appears to be'' the driver accordingly.
 \item \textbf{Scope of data.} Six small tabular datasets ($<1{,}000$ training
 rows); the findings may not extend to larger, higher-dimensional, or non-tabular
 data. The strength of H2 in particular depends on a dataset having AUC headroom.
@@ -520,7 +537,8 @@ All numbers are read from logged runs: \texttt{exp14\_context\_sampling\_*.json}
 (H1, the correlational part of H2, H3, stress tests),
 \texttt{exp15\_controlled\_*.json} (the controlled representativeness test), and
 \texttt{exp16\_disentangle\_*.json} (the shift-vs-diversity disentangling), all
-under \texttt{experiments/results/}. Datasets are public OpenML tasks; split seed
+under \texttt{experiments/results/}. The mixed-effects model is fit by
+\texttt{mixed\_effects\_exp16.py}. Datasets are public OpenML tasks; split seed
 and per-block seeds are recorded. Runs used an NVIDIA RTX 4060 GPU.
 
 \begin{thebibliography}{9}
