@@ -80,6 +80,39 @@ Everything under `src/`, `tests/`, `scripts/`, etc. is upstream TabPFN.
 
 ---
 
+## How the research was tracked
+
+The entire project was logged in a single file, [`TRACKER.md`](TRACKER.md) — a
+chronological research journal kept as the one source of truth (no scattered
+notes or per-experiment docs). It grew to ~2,700 lines across 29 dated parts and
+records not just the final results but the full path to them, including the
+directions we abandoned. Each experiment's outcome and the reasoning it triggered
+was appended as it happened, so the file doubles as an audit trail: any claim in
+the papers can be traced back to the run and the decision that produced it.
+
+The log is deliberately honest about course corrections rather than presenting a
+clean after-the-fact story. Notable turns it captures:
+
+- An early **"scaling / beating the Nature benchmark"** framing that was dropped
+  once we found TabPFN-3 already scales to 1M rows — the question was reframed
+  from *capacity* to *context efficiency*.
+- Removal of fabricated numbers from an early paper draft (invented GPU memory,
+  OOM points, R² values) and a hard rule thereafter: **report only measured
+  results**, every number traceable to a logged JSON output.
+- A **CPU bottleneck** phase and the discovery that an early "saturation" result
+  was an artifact of a bug (the $k$ parameter was never actually applied); this
+  is why later experiments fit on an explicit `X[idx]` subset.
+- The **pivot to the small-data study** (Paper 2) and, within it, the moment the
+  controlled experiment *refuted* the initial H2 hypothesis — recorded as a
+  finding, then followed up rather than buried.
+
+Working principles that the tracker enforced throughout: single-doc logging, no
+fabrication, and letting the data drive the narrative (hypotheses were revised
+when experiments contradicted them). If you want the "why" behind any choice in
+the code or papers, `TRACKER.md` is the place to look.
+
+---
+
 ## Reproducing the study
 
 Requires a CUDA GPU (the study used an RTX 4060). Install TabPFN and the analysis
