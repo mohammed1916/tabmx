@@ -2744,3 +2744,64 @@ ARXIV_SUBMISSION_CHECKLIST.md removed (tracked here instead).
 
 Paper 2 must-fixes done: confident contribution framing (abstract/intro/conclusion),
 95% CIs + effect sizes throughout, expanded limitations, de-hedged tone.
+
+## Part 30: Removal of Dead Dataset List (2026-07-29)
+
+`experiments/benchmark_datasets.py` deleted. Found while starting a follow-on
+project (`d/lightgbmz`, on gradient-based sampling in LightGBM) that reused this
+file as a starting point: a dataset there scored a much lower AUC than the
+literature reports, and the cause traced back to a **wrong OpenML id inherited
+from this file**.
+
+**What was wrong.** The file's ids were largely not what their labels claimed.
+Verified against the OpenML API on 2026-07-29:
+
+| id in file | label in file | actual OpenML dataset |
+|---|---|---|
+| 1111 | magic-gamma | `KDDCup09_appetency` (50000 x 230) |
+| 40668 | phoneme | `connect-4` (67557 x 42) |
+| 40966 | bank-marketing | `MiceProtein` (1080 x 77) |
+| 344 | churn | `mv` (40768 x 10) |
+| 40713 | nomao | `dis` (3772 x 29) |
+| 40981 | airlines-delay | `Australian` (690 x 14) |
+| 40916 | kddcup09-appetency | `HappinessRank_2015` (158 x 10) |
+| 40917 | kddcup09-churn | `USvid` (2400 x 7) |
+| 1493 | adult-census | `one-hundred-plants-texture` (1599 x 64) |
+| 40915 | credit-fraud | does not exist (OpenMLError) |
+
+Correct ids for two that mattered: magic-gamma is **1120**, phoneme is **1489**.
+
+**Impact on this project's results: NONE.** Confirmed by three checks before
+deleting:
+
+1. No `.tex` file in `publications/paper1/` or `publications/paper2/` mentions
+   any of these dataset names.
+2. **Nothing imports `benchmark_datasets.py`.** The experiments that produced the
+   papers (`exp14_context_sampling.py`, `exp15_controlled.py`,
+   `exp16_disentangle.py`) each define their own `DATASETS` list inline.
+3. No file in `experiments/results/` references these names.
+
+Additionally, all 15 dataset ids the papers *do* use were re-verified against the
+OpenML API: every id matches its label and expected shape (diabetes 37,
+credit-g 31, vehicle 54, wdbc 1510, breast-w 15, blood-transfusion 1464,
+ionosphere 59, sonar 40, glass 41, australian 40981, heart-statlog 53,
+segment 40984, waveform-5000 60, spambase 44, kc1 1067). **No published number
+is affected.**
+
+Note 40981 appears legitimately as `australian` in the papers' list and *also*
+appeared mislabelled as `airlines-delay` in the dead file. The papers' usage is
+the correct one.
+
+**Why delete rather than fix.** The file is a leftover from the abandoned
+"scaling / beating the Nature benchmark" framing (Part 1-2), superseded once the
+work was reframed around context efficiency. Since roughly 9 of its ~14 ids were
+wrong and nothing consumes it, correcting them would produce a verified-looking
+artifact that no experiment uses, and would invite exactly the reuse that caused
+the downstream bug. Deleting removes the trap.
+
+**Rule going forward** (now also in the lightgbmz tracker): an OpenML id is not
+trusted until its name and shape are verified against the API. A hardcoded
+`(id, name)` pair is an assertion about external data, and this file shows those
+assertions silently rot. The bug was only noticeable downstream because there was
+a prior expectation for that dataset's AUC; nothing internal to the code could
+have caught it.
