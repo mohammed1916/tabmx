@@ -194,8 +194,8 @@ electricity    & test  & 2048 (predicted) \\
 
 On electricity, using the predicted $k{=}2048$ rather than a fixed $k{=}512$
 raised AUC from 0.8606 to 0.9181 ($+6.7\%$) in this single held-out test. The
-pattern in the training data---small datasets favor small $k$, large datasets
-favor larger $k$---is intuitive but rests on only five training points and one
+pattern in the training data (small datasets favor small $k$, large datasets
+favor larger $k$) is intuitive but rests on only five training points and one
 test point, so we treat ``$k$ can be predicted from dataset properties'' as a
 hypothesis supported by a single successful held-out case, not as a validated
 result.
@@ -242,7 +242,7 @@ and vehicle, K-Means and FPS were marginally ahead; on electricity at
 $k{=}2048$, random was marginally ahead. We do not read these small differences
 as a consistent ranking.
 \item Random selection was much cheaper to compute: its selection time was on
-the order of $10^{-4}$ s, versus roughly $0.15$--$3$ s for K-Means---about three
+the order of $10^{-4}$ s, versus roughly $0.15$--$3$ s for K-Means, about three
 orders of magnitude faster in these runs. Because it costs almost nothing and
 matched the other methods on accuracy here, random is a reasonable default.
 \end{itemize}
@@ -363,7 +363,7 @@ $\sim$10{,}000 rows.
 dataset (electricity), raising $k$ from 512 to 2048 helped noticeably; on small
 datasets a small $k$ sufficed.
 \item Among the selection methods tested, accuracy differences were small,
-while random selection was far cheaper---so random is a sensible default.
+while random selection was far cheaper, so random is a sensible default.
 Uncertainty- and variance-based selection performed markedly worse.
 \item At a fixed budget, one large context beat several smaller ones.
 \end{enumerate}
