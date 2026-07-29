@@ -98,6 +98,51 @@ or the choice of selection algorithm, as what a small-data context needs---and t
 reach that conclusion by a controlled experiment that overturns the more obvious
 correlational story.
 
+\section{Related Work}
+
+\textbf{In-context learning and TabPFN.} In-context learning, in which a model
+adapts to a task from examples placed in its input without weight updates, was
+popularized by large language models \cite{brown2020gpt3} and has since been
+surveyed extensively \cite{dong2024icl}. Prior-data fitted networks (PFNs) bring
+this paradigm to supervised learning by meta-training a transformer to perform
+Bayesian inference in a forward pass \cite{muller2022pfn}; TabPFN applies it to
+tabular classification and regression \cite{hollmann2025tabpfn}. Our study takes
+TabPFN as given and asks a downstream question its design raises but does not
+answer: how the in-context set should be chosen on small data.
+
+\textbf{Prototype and instance selection.} Choosing a small subset of training
+examples is a classical problem in nearest-neighbor learning, where prototype
+selection methods aim to shrink the reference set while preserving accuracy
+\cite{garcia2012prototype}. Clustering- and coverage-based selectors are standard
+tools---k-means++ seeding \cite{arthur2007kmeans} and farthest-point / $k$-center
+sampling \cite{gonzalez1985clustering} both spread selected points across the
+input space. We evaluate exactly these families as context selectors for TabPFN
+and find that, at matched budget, they do not beat uniform random enough to
+justify their cost.
+
+\textbf{Coverage, diversity, and coresets.} A parallel line of work formalizes
+``covering'' a dataset with a small set. Determinantal point processes model
+diverse subsets through a volume (log-determinant) objective
+\cite{kulesza2012dpp}; coreset constructions seek small weighted subsets that
+approximate a learning objective \cite{feldman2020coresets}, and coverage-driven
+selection has been used directly for active learning \cite{sener2018coreset}.
+These motivate the geometric diversity/coverage descriptors we use, and our
+controlled experiments provide evidence that---for TabPFN on small data---such
+coverage, rather than distributional fidelity, is what tracks accuracy.
+
+\textbf{Data valuation and compression.} Related efforts ask which data are
+valuable or how to compress a dataset: data-valuation methods score individual
+examples by their marginal contribution \cite{ghorbani2019datashapley}, and
+dataset distillation synthesizes tiny training sets that reproduce full-data
+performance \cite{wang2018distillation}. Our aim is narrower and diagnostic:
+rather than propose a new selection or synthesis method, we isolate \emph{which
+property of a context} drives TabPFN's accuracy, using controlled construction
+and mixed-effects inference \cite{bates2015lme4}.
+
+\textbf{Benchmark data.} All experiments use public tasks from OpenML
+\cite{vanschoren2014openml}, which supplies the standardized, citable datasets
+that make the study reproducible.
+
 \section{Setup}
 
 We use TabPFN v3 with \texttt{ignore\_pretraining\_limits=True}. Each dataset is
@@ -694,7 +739,7 @@ random seeds, train/test splits, and experiment configurations are recorded in
 the result files. Experiments were performed using TabPFN v3 on an NVIDIA RTX
 4060 GPU.
 
-\begin{thebibliography}{13}
+\begin{thebibliography}{15}
 
 \bibitem{hollmann2025tabpfn}
 Hollmann, N., Müller, S., Purucker, L., Krishnakumar, A., Körfer, M.,
@@ -751,6 +796,17 @@ Introduction to core-sets: an updated survey.
 Sener, O., \& Savarese, S. (2018).
 Active learning for convolutional neural networks: a core-set approach.
 In \textit{International Conference on Learning Representations (ICLR)}.
+
+\bibitem{wang2018distillation}
+Wang, T., Zhu, J.-Y., Torralba, A., \& Efros, A.~A. (2018).
+Dataset distillation.
+\textit{arXiv preprint arXiv:1811.10959}.
+
+\bibitem{ghorbani2019datashapley}
+Ghorbani, A., \& Zou, J. (2019).
+Data Shapley: equitable valuation of data for machine learning.
+In \textit{Proceedings of the 36th International Conference on Machine Learning
+(ICML)}, 2242--2251.
 
 \bibitem{settles2009active}
 Settles, B. (2009).
